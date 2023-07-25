@@ -1,6 +1,8 @@
-const db = require("../models");
-const Tutorial = db.tutorials;
-const Op = db.Sequelize.Op;
+const db = require("../models"); 
+const Tutorial = db.tutorials; //veritabanı tablosu
+const Op = db.Sequelize.Op; //veritabanı operatörleri (Op.and, Op.or, Op.gt vb.)
+
+
 
 // Create and Save a new Tutorial
 exports.create = (req, res) => {
@@ -53,7 +55,7 @@ exports.findAll = (req, res) => {
 exports.findOne = (req, res) => {
   const id = req.params.id;
 
-  Tutorial.findByPk(id)
+  Tutorial.findById(id)
     .then(data => {
       if (data) {
         res.send(data);
