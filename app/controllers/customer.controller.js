@@ -276,6 +276,7 @@ exports.update = async (req, res) => {
       res.status(404).send({
         message: "No user"
       });
+      
       return { message: "no user" };
     }
     else if (!user[0].token && !user[0].key) {
