@@ -7,9 +7,9 @@ const sslCertFilePath = path.join(__dirname, 'db_certs', 'enhencer_mysql_db.crt.
 module.exports = {
   development: {
     username: "root",
-    password: "password",
+    password: "hesoyam9",
     host: "localhost",
-    database: "test",
+    database: "enhencer",
     dialect: "mysql"
   },
   production: {

@@ -3,22 +3,12 @@ const CryptoJS = require("crypto-js");
 const axios = require('axios');
 const requestIp = require('request-ip');
 const Customer = db.customers;
-//const Op = db.Sequelize.Op;
-const mongoose = db.mongoose;
 const Mongoose = db.Mongoose;
 const sequelize = db.sequelize;
-
-// const PurchaseUserSchema = require("../models/nosql/purchaseUser.model");
 const PurchaseUserSchema = db.purchaseUserSchema;
 const UserModel = db.userModel;
-// const PurchaseProjectSchema = require("../models/nosql/purchaseProject.model");
-const PurchaseProjectSchema = db.purchaseProjectSchema;
 const ProjectModel = db.projectModel;
-// const PurchaseModelSchema = require("../models/nosql/purchaseModel.model");
-const PurchaseModelSchema = db.purchaseModelSchema;
 const ModelModel = db.modelModel;
-// const FacebookLogSchema = require("../models/nosql/facebookLog.model");
-const FacebookLogSchema = db.facebookLogSchema;
 const FacebookLogModel = db.facebookLogModel;
 
 function updateCustomerData(customerData) {
@@ -36,6 +26,8 @@ function updateCustomerData(customerData) {
       customerData["deviceType"] === "undefined"
       ? ""
       : customerData["deviceType"];
+
+  customerData["source"] = customerData["source"].substring(0, 120)
 
   if (customerData["actionType"]) {
     if (customerData["actionType"] === "product") {
@@ -279,11 +271,21 @@ exports.update = async (req, res) => {
 
     const user = await userAggregation.exec(); //get user data
 
-    if (user.length === 0) return { message: "no user" }; //if user does not exist
+    if (user.length === 0) {
+      //if user does not exist
+      res.status(404).send({
+        message: "No user"
+      });
+      return { message: "no user" };
+    }
     else if (!user[0].token && !user[0].key) {
-      //if user is found but token and key are not found
+      //if user is found but token and key are not found - no model
       resultObject["Likely to buy"] = -1;
       resultObject["Likely to buy segment"] = -1;
+
+      resultObject["anEnabled"] = !!user[0].crmDetails && user[0].crmDetails.audienceNetworkSwitch
+      resultObject["isAnEnabled"] = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled
+
       let uniqId = Date.now().toString() + +Math.floor(Math.random() * 10000).toString();
       let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
       resultObject["audiences"] = [
@@ -308,6 +310,7 @@ exports.update = async (req, res) => {
         enh_conv_rem: 1,
       };
     } else {
+      // has model
       if (user[0].facebookAds) {
         facebookAds = user[0].facebookAds;
       }
@@ -359,9 +362,13 @@ exports.update = async (req, res) => {
       const isAudienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled;
       resultObject = await createResultObject({
         userID, model, customerData, updatedData, audiences, campaigns, facebookAds,
-        fbp: fbp, visitorId: visitorID, ipAddress: ipAddress,
-        userAgent: userAgent, eventSourceUrl: eventSourceUrl,
-        anEnabled: audienceNetworkEnabled, isAnEnabled: isAudienceNetworkEnabled,
+        fbp: fbp,
+        visitorId: visitorID,
+        ipAddress: ipAddress,
+        userAgent: userAgent,
+        eventSourceUrl: eventSourceUrl,
+        anEnabled: audienceNetworkEnabled,
+        isAnEnabled: isAudienceNetworkEnabled,
         enhencerCategories: enhencerCategories
       });
       resultObject.anEnabled = audienceNetworkEnabled;
@@ -390,21 +397,31 @@ exports.update = async (req, res) => {
   }
 
   Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userID;
-  const selectedCustomer = await getById(visitorID);
 
   const transaction = await Customer.sequelize.transaction();
-
   try {
-    await sendEventsToFacebookThroughConversionAPI(facebookAds.pixelId, facebookAds.accessToken, resultObject.fbData, userID);
+    console.log("0000")
+    const selectedCustomer = await getById(visitorID);
+    console.log("1111")
+    console.log(facebookAds.pixelId, facebookAds.accessToken, resultObject.fbData, userID)
+    await sendEventsToFacebookThroughConversionAPI({
+      pixelId: facebookAds.pixelId,
+      accessToken: facebookAds.accessToken,
+      fbData: resultObject.fbData,
+      userId: userID
+    });
     const { fbData, ...result } = resultObject;
     await selectedCustomer.update(updatedData, { transaction });
     await transaction.commit();
     res.status(202).send(JSON.stringify(result));
     return result;
   } catch (error) {
-    console.log(error)
     await transaction.rollback();
-    throw error;
+    res.status(200).send({
+      message:
+        error.message || "Error occured while scoring",
+    });
+    return
   }
 
 };
@@ -851,7 +868,7 @@ function createFilterCategories(customerData, filterBundles) {
   return bundles;
 }
 
-async function getById (visitorId) {
+async function getById(visitorId) {
   try {
     return await Customer.findById(visitorId, { rejectOnEmpty: true });
 
@@ -867,23 +884,33 @@ async function getById (visitorId) {
   }
 }
 
-async function sendEventsToFacebookThroughConversionAPI (pixelId, accessToken, fbData, userId) {
+async function sendEventsToFacebookThroughConversionAPI({
+  pixelId,
+  accessToken,
+  fbData,
+  userId
+}) {
+  console.log("sendEventsToFacebookThroughConversionAPI")
   if (fbData && fbData.length > 0) {
-    let url = `https://graph.facebook.com/v15.0/${pixelId}/events?access_token=${accessToken}`
-    try {
-      const fbResult = await axios.post(url, {
-        data: fbData
-      })
-      return;
-    } catch (err) {
+  console.log("inside")
+  let url = `https://graph.facebook.com/v15.0/${pixelId}/events?access_token=${accessToken}`
+  try {
+    const fbResult = await axios.post(url, {
+      data: fbData
+    })
+    return;
+  } catch (err) {
+    console.log("catch fb conv api error for user ", userId, ": ", {
+      error: err.response.data.error || err.response.data || "No error data",
+      userId
+    })
 
-      // const FacebookLogModel = mongoose.model('facebook_log', FacebookLogSchema, 'facebook_logs');
-      FacebookLogModel.create({
-        error: err,
-        userId: userId,
-      });
-      return;
-    }
+    /* await FacebookLogModel.create({
+      // error: err.response.data.error || err.response.data || "No error data",
+      userId
+    }); */
+    return;
+  }
   } else {
     return;
   }

@@ -41,7 +41,6 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to enhencer!" });
 });
 
-require("./app/routes/tutorial.routes")(app);
 require("./app/routes/customer.routes")(app);
 require("./app/routes/listing.routes")(app);
 require("./app/routes/product.routes")(app);
@@ -51,7 +50,7 @@ require("./app/routes/visitor.routes")(app);
 
 
 // set port, listen for requests
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });

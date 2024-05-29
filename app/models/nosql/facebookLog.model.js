@@ -2,9 +2,11 @@
 const mongoose = require('mongoose');
 
 let FacebookLog = new mongoose.Schema({
-  error: { type: Object, required: false },
-  message: { type: String, required: false },
-  userId: { type: String, required: false },
+  error: Object,
+  message: String,
+  userId: String,
 });
+
+FacebookLog.set('timestamps', true);
 
 module.exports.FacebookLog = FacebookLog;

@@ -45,7 +45,6 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-db.tutorials = require("./sql/tutorial.model.js")(sequelize, Sequelize);
 db.customers = require("./sql/customer.model.js")(sequelize, Sequelize);
 db.listings = require("./sql/listing.model.js")(sequelize, Sequelize);
 db.products = require("./sql/product.model.js")(sequelize, Sequelize);
@@ -64,21 +63,18 @@ db.mngPurchases = require("./sql/mng.purchase.model.js")(sequelize, Sequelize);
 db.mongoose = mongoose;
 db.Mongoose = Mongoose;
 
-// db.purchaseUserSchema = require("./nosql/purchaseUser.model");
 db.userModel = mongoose.model(
   "user",
   require("./nosql/purchaseUser.model"),
   "purchase_users"
 )
-// db.purchaseProjectSchema = require("./nosql/purchaseProject.model");
 db.projectModel = mongoose.model(
   "project",
   require("./nosql/purchaseProject.model"),
   "projects"
 )
-// db.purchaseModelSchema = require("./nosql/purchaseModel.model");
+
 db.modelModel = mongoose.model('model', require("./nosql/purchaseModel.model"), 'models');
-// db.facebookLogSchema = require("./nosql/facebookLog.model");
-db.facebookLogModel = mongoose.model('facebook_log', require("./nosql/facebookLog.model"), 'facebook_logs');
+db.facebookLogModel = mongoose.model('facebook_log', require("./nosql/facebookLog.model"));
 
 module.exports = db;
