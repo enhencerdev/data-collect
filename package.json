@@ -8,8 +8,8 @@
   },
   "scripts": {
     "start": "node cluster.js",
-    "dev": "cross-env NODE_PATH=. NODE_ENV=development nodemon",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "cross-env NODE_PATH=. NODE_ENV=development nodemon"
+    
   },
   "keywords": [
     "nodejs",
