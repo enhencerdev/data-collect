@@ -289,7 +289,7 @@ exports.update = async (req, res) => {
       resultObject["anEnabled"] = !!user[0].crmDetails && user[0].crmDetails.audienceNetworkSwitch
       resultObject["isAnEnabled"] = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled
 
-      let uniqId = Date.now().toString() + +Math.floor(Math.random() * 10000).toString();
+      let uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
       let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
       resultObject["audiences"] = [
         {
@@ -298,7 +298,7 @@ exports.update = async (req, res) => {
           eventId: eventId,
         },
       ];
-      uniqId = Date.now().toString() + +Math.floor(Math.random() * 10000).toString();
+      uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
       eventId = "eid." + uniqId.substring(5) + "." + visitorID;
       resultObject["campaigns"] = [
         {
@@ -403,10 +403,7 @@ exports.update = async (req, res) => {
 
   const transaction = await Customer.sequelize.transaction();
   try {
-    console.log("0000")
     const selectedCustomer = await getById(visitorID);
-    console.log("1111")
-    console.log(facebookAds.pixelId, facebookAds.accessToken, resultObject.fbData, userID)
     await sendEventsToFacebookThroughConversionAPI({
       pixelId: facebookAds.pixelId,
       accessToken: facebookAds.accessToken,
@@ -670,7 +667,7 @@ function setEnhencerAudiences(resultObject, customerData, updatedData, audiences
 
     if (isEnhencerAudience) {
       if (facebookAds && facebookAds.pixelId && facebookAds.accessToken && fbp && audience.platform === "Facebook") {
-        const uniqId = Date.now().toString() + + Math.floor(Math.random() * 10000).toString();
+        const uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
         const eventId = "eid." + uniqId.substring(5) + "." + visitorId;
         resultObject.audiences.push({
           "name": audience.name,
@@ -747,7 +744,7 @@ function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, c
       if (isEnhencerAudience) {
         bundles = createFilterCategories(customerData, campaign.filterBundles);
         if (facebookAds && facebookAds.pixelId && facebookAds.accessToken && fbp && campaign.adPlatform === "Facebook") {
-          const uniqId = Date.now().toString() + + Math.floor(Math.random() * 10000).toString();
+          const uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
           const eventId = "eid." + uniqId.substring(5) + "." + visitorId;
           camp = {
             "name": campaign.audiencePath,

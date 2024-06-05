@@ -99,6 +99,9 @@ async function updateVisitorsTable(userId, visitorData) {
 }
 
 exports.create = async (req, res) => {
+  console.log("in product")
+  res.status(200).send({ result: "success" });
+  return
   // Validate request
   /*if (!req.body.title) {
     res.status(400).send({
