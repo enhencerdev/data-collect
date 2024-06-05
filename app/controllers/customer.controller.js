@@ -27,7 +27,9 @@ function updateCustomerData(customerData) {
       ? ""
       : customerData["deviceType"];
 
-  customerData["source"] = customerData["source"].substring(0, 120)
+  if (customerData["source"]) {
+    customerData["source"] = customerData["source"].substring(0, 120)
+  }
 
   if (customerData["actionType"]) {
     if (customerData["actionType"] === "product") {
@@ -276,7 +278,7 @@ exports.update = async (req, res) => {
       res.status(404).send({
         message: "No user"
       });
-      
+
       return { message: "no user" };
     }
     else if (!user[0].token && !user[0].key) {
@@ -893,25 +895,25 @@ async function sendEventsToFacebookThroughConversionAPI({
 }) {
   console.log("sendEventsToFacebookThroughConversionAPI")
   if (fbData && fbData.length > 0) {
-  console.log("inside")
-  let url = `https://graph.facebook.com/v15.0/${pixelId}/events?access_token=${accessToken}`
-  try {
-    const fbResult = await axios.post(url, {
-      data: fbData
-    })
-    return;
-  } catch (err) {
-    console.log("catch fb conv api error for user ", userId, ": ", {
-      error: err.response.data.error || err.response.data || "No error data",
-      userId
-    })
+    console.log("inside")
+    let url = `https://graph.facebook.com/v15.0/${pixelId}/events?access_token=${accessToken}`
+    try {
+      const fbResult = await axios.post(url, {
+        data: fbData
+      })
+      return;
+    } catch (err) {
+      console.log("catch fb conv api error for user ", userId, ": ", {
+        error: err.response.data.error || err.response.data || "No error data",
+        userId
+      })
 
-    /* await FacebookLogModel.create({
-      // error: err.response.data.error || err.response.data || "No error data",
-      userId
-    }); */
-    return;
-  }
+      /* await FacebookLogModel.create({
+        // error: err.response.data.error || err.response.data || "No error data",
+        userId
+      }); */
+      return;
+    }
   } else {
     return;
   }
