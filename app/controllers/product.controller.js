@@ -64,7 +64,9 @@ async function updateVisitorsTable(userId, visitorData) {
       { $match: { _id: new Mongoose.Types.ObjectId(userId) } },
       { $project: { productCategories: 1, "crmDetails.audienceNetworkSwitch": 1 } }
     ]);
+    console.log("will get user")
     const user = await userAggregation.exec();
+    console.log("user geldi ", user)
     if (user.length === 0) {
       return { "message": "no user" }
     } else if (!user[0].crmDetails || !user[0].crmDetails.audienceNetworkSwitch) {
@@ -83,17 +85,20 @@ async function updateVisitorsTable(userId, visitorData) {
       }
       
     }
-
+    
+    console.log("continue")
   } catch (error) {
     throw error;
   }
-
+  
   // Set table name
   Visitor.tableName = "visitor_data_" + userId;
-
+  
   // Save Visitor in the database
   try {
+    console.log("az kaldiiii")
     await Visitor.upsert(visitorData);
+    console.log("bitti burasi")
   } catch (error) {
     throw error;
   }
@@ -135,14 +140,20 @@ exports.create = async (req, res) => {
     type,
   };
 
+  console.log("1")
   updateProductData(product, product.type);
-
+  
+  console.log("2")
+  
   // Save Product in the database
   if (type === "ecommerce") {
+    console.log("3")
     Product.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
+    console.log("4")
     try {
       const createdProduct = await Product.upsert(product);
-
+      console.log("5 ", createdProduct)
+      
       if (!createdProduct) {
         // If column already exists, update pageCount
         const {
@@ -153,6 +164,9 @@ exports.create = async (req, res) => {
           productCategory3,
           price,
         } = product;
+
+        console.log("6")
+        
         try {
           await Product.update(
             { pageCount: db.Sequelize.literal("pageCount + 1") },
@@ -167,7 +181,9 @@ exports.create = async (req, res) => {
               },
             }
           );
+          console.log("88")
         } catch (error) {
+          console.log("nooo")
           res.status(500).send({
             message: "Error occurred while updating the product.",
             error: error.message,
@@ -175,7 +191,9 @@ exports.create = async (req, res) => {
           return;
         }
       }
+      console.log("99")
       await updateVisitorsTable(userID, { category: product.productCategory2, visitorID: product.visitorID });
+      console.log("last")
       res.status(200).send({ result: "success" });
     } catch (error) {
       res.status(500).send({
