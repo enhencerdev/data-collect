@@ -10,7 +10,8 @@ module.exports = {
     password: "hesoyam9",
     host: "localhost",
     database: "enhencer",
-    dialect: "mysql"
+    dialect: "mysql",
+    logging: false
   },
   production: {
     username: process.env.MYSQL_USERNAME,
@@ -18,6 +19,7 @@ module.exports = {
     database: process.env.MYSQL_DBNAME,
     host: process.env.MYSQL_HOST,
     port: 3306,
+    logging: false,
     dialect: 'mysql',
     dialectOptions: {
       ssl: {

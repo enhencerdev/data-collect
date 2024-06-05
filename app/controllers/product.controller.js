@@ -1,3 +1,4 @@
+const dbConfig = require("../config/db.config");
 const db = require("../models");
 const Product = db.products;
 const Visitor = db.visitors;
@@ -99,9 +100,10 @@ async function updateVisitorsTable(userId, visitorData) {
 }
 
 exports.create = async (req, res) => {
-  console.log("in product")
+  /* console.log("in product")
+  console.log("ddbb ", process.env)
   res.status(200).send({ result: "success" });
-  return
+  return */
   // Validate request
   /*if (!req.body.title) {
     res.status(400).send({
