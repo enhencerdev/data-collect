@@ -149,7 +149,7 @@ exports.create = async (req, res) => {
   if (type === "ecommerce") {
     console.log("3")
     Product.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
-    console.log("4")
+    console.log("4 ", process.env)
     try {
       const createdProduct = await Product.upsert(product);
       console.log("5 ", createdProduct)

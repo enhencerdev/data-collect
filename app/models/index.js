@@ -38,6 +38,7 @@ const Sequelize = require("sequelize");
   }
 }); */
 const sequelize = new Sequelize(dbConfig[ENV]);
+console.log("========= sequelize " , dbConfig)
 
 
 const db = {};
