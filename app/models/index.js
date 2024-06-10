@@ -6,7 +6,7 @@ const mongodbConfig = require("../config/mongo.config.js");
 const ENV = process.env.NODE_ENV || 'development';
 
 const dbOptions = {
-  keepAlive: 1,
+  keepAlive: true,
   socketTimeoutMS: 8000000,
   connectTimeoutMS: 8000000,
   // useCreateIndex: true,
@@ -38,7 +38,6 @@ const Sequelize = require("sequelize");
   }
 }); */
 const sequelize = new Sequelize(dbConfig[ENV]);
-console.log("========= sequelize " , dbConfig)
 
 
 const db = {};
@@ -50,7 +49,6 @@ db.customers = require("./sql/customer.model.js")(sequelize, Sequelize);
 db.listings = require("./sql/listing.model.js")(sequelize, Sequelize);
 db.products = require("./sql/product.model.js")(sequelize, Sequelize);
 db.purchases = require("./sql/purchase.model.js")(sequelize, Sequelize);
-db.visitors = require("./sql/visitor.model.js")(sequelize, Sequelize);
 db.tatilBudurListings = require("./sql/tatilBudur.listing.model.js")(sequelize, Sequelize);
 db.tatilBudurProducts = require("./sql/tatilBudur.product.model.js")(sequelize, Sequelize);
 db.tatilBudurPurchases = require("./sql/tatilBudur.purchase.model.js")(sequelize, Sequelize);

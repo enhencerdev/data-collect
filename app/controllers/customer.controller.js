@@ -11,49 +11,14 @@ const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
 const FacebookLogModel = db.facebookLogModel;
 
-function updateCustomerData(customerData) {
-  customerData["city"] =
-    customerData["city"] === undefined || customerData["city"] === "undefined"
-      ? ""
-      : customerData["city"];
-  customerData["country"] =
-    customerData["country"] === undefined ||
-      customerData["country"] === "undefined"
-      ? ""
-      : customerData["country"];
-  customerData["deviceType"] =
-    customerData["deviceType"] === undefined ||
-      customerData["deviceType"] === "undefined"
-      ? ""
-      : customerData["deviceType"];
-
-  if (customerData["source"]) {
-    customerData["source"] = customerData["source"].substring(0, 120)
-  }
-
-  if (customerData["actionType"]) {
-    if (customerData["actionType"] === "product") {
-      customerData["product_viewer"] = 1;
-      customerData["last_product_view_time"] = new Date();
-    } else if (customerData["actionType"] === "basket") {
-      customerData["add_to_basket"] = 1;
-      customerData["last_add_to_basket_time"] = new Date();
-    } else if (customerData["actionType"] === "purchase") {
-      customerData["purchase_time"] = new Date();
-    }
-  }
+exports.create = async (req, res) => {
+  upsertCustomer({ body: req.body })
+  res.status(200).send({ result: "success" });
 }
 
-exports.create = async (req, res) => {
-  // Validate request
-  /*if (!req.body.title) {
-    res.status(400).send({
-      message: "Content can not be empty!"
-    });
-    return;
-  }*/
 
-  // Create a Customer
+const upsertCustomer = async ({ body }) => {
+
   const {
     userID,
     visitorID,
@@ -91,7 +56,7 @@ exports.create = async (req, res) => {
     enhencer_audience_3,
     enhencer_audience_4,
     enhencer_audience_5,
-  } = JSON.parse(req.body);
+  } = JSON.parse(body);
 
   const customer = {
     visitorID,
@@ -132,7 +97,7 @@ exports.create = async (req, res) => {
   };
 
   // Update customer data
-  updateCustomerData(customer);
+  correctCustomerData(customer);
 
   // Set table name
   Customer.tableName = "visitor_data_customer_" + userID;
@@ -140,13 +105,10 @@ exports.create = async (req, res) => {
   // Save Customer in the database
   try {
     const createdCustomer = await Customer.upsert(customer);
-    res.status(200).send({ result: "success" });
+    return "success"
   } catch (error) {
     console.log(error);
-    res.status(500).send({
-      message:
-        error.message || "Some error occurred while creating the Customer.",
-    });
+    return error
   }
 };
 
@@ -249,6 +211,8 @@ exports.update = async (req, res) => {
     "projects"
   ); */
 
+
+  console.log("start")
   try {
     const userAggregation = UserModel.aggregate([
       //This pipeline aims to retrieve user data matching userID
@@ -280,15 +244,14 @@ exports.update = async (req, res) => {
       });
 
       return { message: "no user" };
-    }
-    else if (!user[0].token && !user[0].key) {
+
+    } else if (!user[0].token && !user[0].key) {
       //if user is found but token and key are not found - no model
       resultObject["Likely to buy"] = -1;
       resultObject["Likely to buy segment"] = -1;
 
       resultObject["anEnabled"] = !!user[0].crmDetails && user[0].crmDetails.audienceNetworkSwitch
       resultObject["isAnEnabled"] = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled
-
       let uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
       let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
       resultObject["audiences"] = [
@@ -442,77 +405,6 @@ function getQuery(connectQuery, userId, id) {
   return query;
 }
 
-function getVisitorQuery(userId, visitorId) {
-  const visitorDataTable = "VISITOR_DATA_" + userId;
-  const query = `SELECT CONCAT( IF(cat1 IS NOT NULL, "Formal / Tops, Blouses, T-shirts / Male;", ""),
-  IF(cat2 IS NOT NULL, "Formal / Tops, Blouses, T-shirts / Female;", ""),
-  IF(cat3 IS NOT NULL, "Sport / Tops, Blouses, T-shirts / Male;", ""),
-  IF(cat4 IS NOT NULL, "Sport / Tops, Blouses, T-shirts / Female;", ""),
-  IF(cat5 IS NOT NULL, "Formal / Pants / Male;", ""),
-  IF(cat6 IS NOT NULL, "Formal / Pants / Female;", ""),
-  IF(cat7 IS NOT NULL, "Sport / Pants / Male;", ""),
-  IF(cat8 IS NOT NULL, "Sport / Pants / Female;", ""),
-  IF(cat9 IS NOT NULL, "Formal / Jackets / Male;", ""),
-  IF(cat10 IS NOT NULL, "Formal / Jackets / Female;", ""),
-  IF(cat11 IS NOT NULL, "Sport / Jackets / Male;", ""),
-  IF(cat12 IS NOT NULL, "Sport / Jackets / Female;", ""),
-  IF(cat13 IS NOT NULL, "Formal / Dresses / Male;", ""),
-  IF(cat14 IS NOT NULL, "Formal / Dresses / Female;", ""),
-  IF(cat15 IS NOT NULL, "Sport / Dresses / Male;", ""),
-  IF(cat16 IS NOT NULL, "Sport / Dresses / Female;", ""),
-  IF(cat17 IS NOT NULL, "Formal / Sweaters / Male;", ""),
-  IF(cat18 IS NOT NULL, "Formal / Sweaters / Female;", ""),
-  IF(cat19 IS NOT NULL, "Sport / Sweaters / Male;", ""),
-  IF(cat20 IS NOT NULL, "Sport / Sweaters / Female;", ""),
-  IF(cat21 IS NOT NULL, "Accessories / Male;", ""),
-  IF(cat22 IS NOT NULL, "Accessories / Female;", ""),
-  IF(cat23 IS NOT NULL, "Formal / Boots / Male;", ""),
-  IF(cat24 IS NOT NULL, "Formal / Boots / Female;", ""),
-  IF(cat25 IS NOT NULL, "Sport / Boots / Male;", ""),
-  IF(cat26 IS NOT NULL, "Sport / Boots / Female;", ""),
-  IF(cat27 IS NOT NULL, "Classical / Shoes / Male;", ""),
-  IF(cat28 IS NOT NULL, "Classical / Shoes / Female;", ""),
-  IF(cat29 IS NOT NULL, "Sport / Shoes / Male;", ""),
-  IF(cat30 IS NOT NULL, "Sport / Shoes / Female;", ""),
-  IF(cat31 IS NOT NULL, "Sandal, Slipper, Swim Wear / Male;", ""),
-  IF(cat32 IS NOT NULL, "Sandal, Slipper, Swim Wear / Female;", ""),
-  IF(cat33 IS NOT NULL, "Socks / Male;", ""),
-  IF(cat34 IS NOT NULL, "Socks / Female;", ""),
-  IF(cat35 IS NOT NULL, "Computer;", ""),
-  IF(cat36 IS NOT NULL, "Smart Phone;", ""),
-  IF(cat37 IS NOT NULL, "TV, Video, Sound;", ""),
-  IF(cat38 IS NOT NULL, "Kitchen;", ""),
-  IF(cat39 IS NOT NULL, "Laundry;", ""),
-  IF(cat40 IS NOT NULL, "Living Room;", ""),
-  IF(cat41 IS NOT NULL, "Dining & Kitchen;", ""),
-  IF(cat42 IS NOT NULL, "Bedroom;", ""),
-  IF(cat43 IS NOT NULL, "Bathroom;", ""),
-  IF(cat44 IS NOT NULL, "Workspace;", ""),
-  IF(cat45 IS NOT NULL, "Decoration;", ""),
-  IF(cat46 IS NOT NULL, "Outdoor;", ""),
-  IF(cat47 IS NOT NULL, "Childrens room;", ""),
-  IF(cat48 IS NOT NULL, "Health and Personal Care;", ""),
-  IF(cat49 IS NOT NULL, "Pet Care;", ""),
-  IF(cat50 IS NOT NULL, "Gifts;",  "")) AS categories,
-  IF(addtoBasket IS NOT NULL, 1, 0) AS addtoBasket,
-  IF(purchase IS NOT NULL, 1, 0) AS purchase
-  FROM ${visitorDataTable} WHERE visitorID = "${visitorId}"`;
-  return query;
-}
-
-async function getVisitorDataForAudienceNetwork({ userID, visitorId, category }) {
-
-  try {
-    const query = getVisitorQuery(userID, visitorId);
-    const [visitorData, metadata] = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
-
-    return visitorData;
-  } catch (err) {
-    console.log(err);
-    throw err
-  }
-}
-
 
 
 async function createResultObject({ userID, model, customerData, updatedData, audiences, campaigns, facebookAds, fbp,
@@ -530,15 +422,7 @@ async function createResultObject({ userID, model, customerData, updatedData, au
     setEnhencerAudiences(resultObject, customerData, updatedData, audiences, facebookAds, fbp, visitorId, ipAddress, userAgent, eventSourceUrl);
     setEnhencerCampaignAudiences(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, visitorId, ipAddress, userAgent, eventSourceUrl);
 
-    // anEnabled is a flag for old audience network structure
-    if (anEnabled && model.overallResult !== 0) {
-      const visitorData = await getVisitorDataForAudienceNetwork({ userID, visitorId, score: model.overallResult });
-      if (visitorData) {
-        resultObject.categories = visitorData.categories;
-        resultObject.addtoBasket = visitorData.addtoBasket;
-        resultObject.purchase = visitorData.purchase;
-      }
-    }
+
     // isAnEnabled is a flag for new audience network structure
     if (isAnEnabled && enhencerCategories && model.overallResult !== 0) {
       resultObject.enhencerCategories = enhencerCategories.toString();
@@ -915,3 +799,38 @@ async function sendEventsToFacebookThroughConversionAPI({
     return;
   }
 }
+
+function correctCustomerData(customerData) {
+  customerData["city"] =
+    customerData["city"] === undefined || customerData["city"] === "undefined"
+      ? ""
+      : customerData["city"];
+  customerData["country"] =
+    customerData["country"] === undefined ||
+      customerData["country"] === "undefined"
+      ? ""
+      : customerData["country"];
+  customerData["deviceType"] =
+    customerData["deviceType"] === undefined ||
+      customerData["deviceType"] === "undefined"
+      ? ""
+      : customerData["deviceType"];
+
+  if (customerData["source"]) {
+    customerData["source"] = customerData["source"].substring(0, 120)
+  }
+
+  if (customerData["actionType"]) {
+    if (customerData["actionType"] === "product") {
+      customerData["product_viewer"] = 1;
+      customerData["last_product_view_time"] = new Date();
+    } else if (customerData["actionType"] === "basket") {
+      customerData["add_to_basket"] = 1;
+      customerData["last_add_to_basket_time"] = new Date();
+    } else if (customerData["actionType"] === "purchase") {
+      customerData["purchase_time"] = new Date();
+    }
+  }
+}
+
+exports.upsertCustomer = upsertCustomer

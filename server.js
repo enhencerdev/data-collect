@@ -45,7 +45,6 @@ require("./app/routes/customer.routes")(app);
 require("./app/routes/listing.routes")(app);
 require("./app/routes/product.routes")(app);
 require("./app/routes/purchase.routes")(app);
-require("./app/routes/visitor.routes")(app);
 
 
 
