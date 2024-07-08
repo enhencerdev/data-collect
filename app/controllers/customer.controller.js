@@ -787,7 +787,8 @@ async function sendEventsToFacebookThroughConversionAPI({
   fbData,
   userId
 }) {
-  console.log("sendEventsToFacebookThroughConversionAPI")
+  console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
+  console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
   if (fbData && fbData.length > 0) {
     console.log("inside")
     let url = `https://graph.facebook.com/v15.0/${pixelId}/events?access_token=${accessToken}`
