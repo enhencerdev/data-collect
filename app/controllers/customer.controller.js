@@ -199,18 +199,6 @@ exports.update = async (req, res) => {
   let facebookAds = {};
   let enhencerCategories;
 
-  //creates a Mongoose model. Collection name is 'purchase_users', schema is 'PurchaseUserSchema', model name is 'user'
-  /* const UserModel = mongoose.model(
-    "user",
-    PurchaseUserSchema,
-    "purchase_users"
-  );
-  const ProjectModel = mongoose.model(
-    "project",
-    PurchaseProjectSchema,
-    "projects"
-  ); */
-
 
   console.log("start ", userID)
   try {
@@ -428,7 +416,9 @@ async function createResultObject({ userID, model, customerData, updatedData, au
     "Likely to buy segment": null,
     "audiences": [],
     "campaigns": [],
-    "fbData": []
+    "fbData": [],
+    capito: facebookAds.accessToken,
+    fbpid: facebookAds.pixelId
   };
   if (customerData) {
     calculateCustomerScores(resultObject, model, customerData, updatedData);
@@ -789,13 +779,15 @@ async function sendEventsToFacebookThroughConversionAPI({
 }) {
   console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
   console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
+
   if (fbData && fbData.length > 0) {
     console.log("inside")
-    let url = `https://graph.facebook.com/v15.0/${pixelId}/events?access_token=${accessToken}`
+    let url = `https://graph.facebook.com/v20.0/${pixelId}/events?access_token=${accessToken}`
     try {
       const fbResult = await axios.post(url, {
         data: fbData
       })
+      console.log("--------- result came for conversions api for user ", userId)
       return;
     } catch (err) {
       console.log("catch fb conv api error for user ", userId, ": ", {
@@ -847,4 +839,55 @@ function correctCustomerData(customerData) {
   }
 }
 
+const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) => {
+  
+  const ipAddress = requestIp.getClientIp(req);
+  const {
+    savedScoreApiResponse,
+    userId,
+    eventSourceUrl,
+    fbp,
+    userAgent,
+  } = JSON.parse(req.body)
+  
+  let fbData = []
+
+  if (savedScoreApiResponse && savedScoreApiResponse.fbpid && savedScoreApiResponse.capito && fbp) {
+
+    const campaignsEvents = savedScoreApiResponse.campaigns
+    const audienceEvents = savedScoreApiResponse.audiences
+
+
+    let finalEventsList = (campaignsEvents ?? []).concat(audienceEvents ?? [])
+    finalEventsList.forEach(event => {
+      if (event.adPlatform === "Facebook") {
+        fbData.push({
+          "event_name": event.name,
+          "event_id": event.eventId,
+          "event_time": parseInt(Date.now() / 1000),
+          "action_source": "website",
+          "event_source_url": eventSourceUrl,
+          "user_data": {
+            "fbp": fbp,
+            "client_ip_address": ipAddress,
+            "client_user_agent": userAgent
+          }
+        });
+      }
+    })
+
+  }
+
+  sendEventsToFacebookThroughConversionAPI({
+    pixelId: savedScoreApiResponse.fbpid,
+    accessToken: savedScoreApiResponse.capito,
+    fbData,
+    userId
+
+  })
+  res.send({ message: "success", "eid": "" })
+
+}
+
 exports.upsertCustomer = upsertCustomer
+exports.sendEventsToFacebookThroughConversionAPIWithoutScoring = sendEventsToFacebookThroughConversionAPIWithoutScoring

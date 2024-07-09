@@ -8,6 +8,8 @@ module.exports = app => {
   
     //Update a Customer with id
     router.put("/:id", customers.update);
+    
+    router.post("/fbcapi/", customers.sendEventsToFacebookThroughConversionAPIWithoutScoring);
   
     app.use('/api/customers', router);
   };
