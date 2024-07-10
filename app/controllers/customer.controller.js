@@ -292,14 +292,21 @@ exports.update = async (req, res) => {
       const aggregateQuery = [{ $match: matchQuery }, { $project: projectQuery }];
       const projectAggregation = ProjectModel.aggregate(aggregateQuery);
       const project = await projectAggregation.exec(); //get project data
-      if (project.length === 0) return { "message": "no project" };
+      
+      if (project.length === 0) {
+        console.log("no project aga ", userID)
+        return res.send({ "message": "no project" });
+      }
+      
       const connectQuery = project[0].connectQuery;
       const audiences = project[0].audiences;
       const campaigns = project[0].campaigns;
       const query = getQuery(connectQuery, userID, visitorID);
+      console.log("------??????? 4.5 ", userID)
       const [customerData, metadata] = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
       // const ModelModel = mongoose.model('model', PurchaseModelSchema, 'models');
       console.log("------??????? 5 ", userID)
+      
       const modelsAggregation = ModelModel.aggregate([
         { $match: { $and: [{ userId: new Mongoose.Types.ObjectId(userID) }, { projectId: new Mongoose.Types.ObjectId(projectId) }] } },
         { $match: { current: true } },
