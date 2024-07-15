@@ -292,22 +292,22 @@ exports.update = async (req, res) => {
       const aggregateQuery = [{ $match: matchQuery }, { $project: projectQuery }];
       const projectAggregation = ProjectModel.aggregate(aggregateQuery);
       const project = await projectAggregation.exec(); //get project data
-      
+
       if (project.length === 0) {
         console.log("no project aga ", userID)
         return res.send({ "message": "no project" });
       }
-      
+
       const connectQuery = project[0].connectQuery;
       const audiences = project[0].audiences;
       const campaigns = project[0].campaigns;
       // console.log("------??????? campaigns", project[0].campaigns)
       const query = getQuery(connectQuery, userID, visitorID);
-      console.log("------??????? 4.5 ", userID, visitorID)
+      console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
       const [customerData, metadata] = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
       // const ModelModel = mongoose.model('model', PurchaseModelSchema, 'models');
       console.log("------??????? 5 ", userID)
-      
+
       const modelsAggregation = ModelModel.aggregate([
         { $match: { $and: [{ userId: new Mongoose.Types.ObjectId(userID) }, { projectId: new Mongoose.Types.ObjectId(projectId) }] } },
         { $match: { current: true } },
@@ -329,7 +329,13 @@ exports.update = async (req, res) => {
       const isAudienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled;
       console.log("------??????? 6 ", userID)
       resultObject = await createResultObject({
-        userID, model, customerData, updatedData, audiences, campaigns, facebookAds,
+        userID,
+        model,
+        customerData,
+        updatedData,
+        audiences,
+        campaigns,
+        facebookAds,
         fbp: fbp,
         visitorId: visitorID,
         ipAddress: ipAddress,
@@ -372,12 +378,14 @@ exports.update = async (req, res) => {
   try {
     console.log("------??????? 10 ", userID)
     const selectedCustomer = await getById(visitorID);
-    await sendEventsToFacebookThroughConversionAPI({
-      pixelId: facebookAds.pixelId,
-      accessToken: facebookAds.accessToken,
-      fbData: resultObject.fbData,
-      userId: userID
-    });
+    if (facebookAds.pixelId && facebookAds.accessToken) {
+      await sendEventsToFacebookThroughConversionAPI({
+        pixelId: facebookAds.pixelId,
+        accessToken: facebookAds.accessToken,
+        fbData: resultObject.fbData,
+        userId: userID
+      });
+    }
     console.log("------??????? 11 ", userID)
     const { fbData, ...result } = resultObject;
     await selectedCustomer.update(updatedData, { transaction });
@@ -848,7 +856,7 @@ function correctCustomerData(customerData) {
 }
 
 const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) => {
-  
+
   const ipAddress = requestIp.getClientIp(req);
   const {
     savedScoreApiResponse,
@@ -857,7 +865,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
     fbp,
     userAgent,
   } = JSON.parse(req.body)
-  
+
   let fbData = []
 
   if (savedScoreApiResponse && savedScoreApiResponse.fbpid && savedScoreApiResponse.capito && fbp) {
@@ -884,15 +892,15 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
       }
     })
 
+    sendEventsToFacebookThroughConversionAPI({
+      pixelId: savedScoreApiResponse.fbpid,
+      accessToken: savedScoreApiResponse.capito,
+      fbData,
+      userId
+  
+    })
   }
 
-  sendEventsToFacebookThroughConversionAPI({
-    pixelId: savedScoreApiResponse.fbpid,
-    accessToken: savedScoreApiResponse.capito,
-    fbData,
-    userId
-
-  })
   res.send({ message: "success", "eid": "" })
 
 }
