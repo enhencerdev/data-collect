@@ -304,7 +304,9 @@ exports.update = async (req, res) => {
       // console.log("------??????? campaigns", project[0].campaigns)
       const query = getQuery(connectQuery, userID, visitorID);
       console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
-      const [customerData, metadata] = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
+      const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
+      console.log("query result is here ", queryResult)
+      const [customerData, metadata] = queryResult
       // const ModelModel = mongoose.model('model', PurchaseModelSchema, 'models');
       console.log("------??????? 5 ", userID)
 
