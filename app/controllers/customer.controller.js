@@ -227,11 +227,20 @@ exports.update = async (req, res) => {
 
     if (user.length === 0) {
       //if user does not exist
+      
       res.status(404).send({
-        message: "No user"
+        message: "No user or missing permissions."
       });
 
       return { message: "no user" };
+      
+    } else if (user[0].crmDetails.subscription.status !== "Recurring") {
+      //if user status is not recurring
+      res.status(404).send({
+        message: "Missing permissions."
+      });
+
+      return { message: "missing permissions" };
 
     } else if (!user[0].token && !user[0].key) {
       console.log("------??????? 1 ", userID)
@@ -306,6 +315,9 @@ exports.update = async (req, res) => {
       console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
       const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
       console.log("query result is here ", queryResult)
+      if (!queryResult || queryResult.length === 0) {
+        return res.send({ "message": "No result" });
+      }
       const [customerData, metadata] = queryResult
       // const ModelModel = mongoose.model('model', PurchaseModelSchema, 'models');
       console.log("------??????? 5 ", userID)
