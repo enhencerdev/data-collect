@@ -213,6 +213,7 @@ exports.update = async (req, res) => {
           thresholds: 1,
           country: 1,
           'crmDetails.country': 1,
+          'crmDetails.subscription': 1,
           'crmDetails.audienceNetworkSwitch': 1,
           'crmDetails.isAudienceNetworkEnabled': 1,
           'enhencerCategories': 1,
@@ -234,7 +235,7 @@ exports.update = async (req, res) => {
 
       return { message: "no user" };
       
-    } else if (user[0].crmDetails.subscription.status !== "Recurring") {
+    } else if (!user[0].crmDetails || !user[0].crmDetails.subscription ||  user[0].crmDetails.subscription.status !== "Recurring") {
       //if user status is not recurring
       res.status(404).send({
         message: "Missing permissions."
