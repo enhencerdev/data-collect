@@ -64,8 +64,8 @@ db.Mongoose = Mongoose;
 
 db.userModel = mongoose.model(
   "user",
-  require("./nosql/purchaseUser.model"),
-  "purchase_users"
+  require("./nosql/user.model.js"),
+  "users"
 )
 db.projectModel = mongoose.model(
   "project",

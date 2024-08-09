@@ -5,11 +5,9 @@ const requestIp = require('request-ip');
 const Customer = db.customers;
 const Mongoose = db.Mongoose;
 const sequelize = db.sequelize;
-const PurchaseUserSchema = db.purchaseUserSchema;
 const UserModel = db.userModel;
 const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
-const FacebookLogModel = db.facebookLogModel;
 
 exports.create = async (req, res) => {
   upsertCustomer({ body: req.body })

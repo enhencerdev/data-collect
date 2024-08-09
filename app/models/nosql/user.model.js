@@ -18,4 +18,4 @@ const User = new mongoose.Schema({
   facebookAds: Object
 });
 
-module.exports.PurchaseUser = User;
+module.exports.User = User;

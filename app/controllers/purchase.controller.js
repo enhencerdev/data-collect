@@ -4,12 +4,6 @@ const TatilBudur = db.tatilBudurPurchases;
 const Mng = db.mngPurchases;
 const Jolly = db.jollyPurchases;
 
-const mongoose = db.mongoose;
-const Mongoose = db.Mongoose;
-// const PurchaseUserSchema = require("../models/nosql/purchaseUser.model");
-const PurchaseUserSchema = db.purchaseUserSchema;
-const UserModel = db.userModel;
-
 const customers = require("../controllers/customer.controller.js");
 
 exports.create = async (req, res) => {
