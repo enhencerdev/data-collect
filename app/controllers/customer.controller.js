@@ -127,6 +127,7 @@ exports.update = async (req, res) => {
     purchase_time,
     source,
     fbp,
+    fbc,
     userAgent,
     eventSourceUrl,
     purchase_propensity,
@@ -226,14 +227,14 @@ exports.update = async (req, res) => {
 
     if (user.length === 0) {
       //if user does not exist
-      
+
       res.status(404).send({
         message: "No user or missing permissions."
       });
 
       return { message: "no user" };
-      
-    } else if (!user[0].crmDetails || !user[0].crmDetails.subscription ||  user[0].crmDetails.subscription.status !== "Recurring") {
+
+    } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring") {
       //if user status is not recurring
       res.status(404).send({
         message: "Missing permissions."
@@ -350,6 +351,7 @@ exports.update = async (req, res) => {
         campaigns,
         facebookAds,
         fbp: fbp,
+        fbc,
         visitorId: visitorID,
         ipAddress: ipAddress,
         userAgent: userAgent,
@@ -437,7 +439,7 @@ function getQuery(connectQuery, userId, id) {
 
 
 
-async function createResultObject({ userID, model, customerData, updatedData, audiences, campaigns, facebookAds, fbp,
+async function createResultObject({ userID, model, customerData, updatedData, audiences, campaigns, facebookAds, fbp, fbc,
   visitorId, ipAddress, userAgent, eventSourceUrl, anEnabled, isAnEnabled, enhencerCategories }) {
   let resultObject = {
     "Uplift": 1,
@@ -451,8 +453,8 @@ async function createResultObject({ userID, model, customerData, updatedData, au
   };
   if (customerData) {
     calculateCustomerScores(resultObject, model, customerData, updatedData);
-    setEnhencerAudiences(resultObject, customerData, updatedData, audiences, facebookAds, fbp, visitorId, ipAddress, userAgent, eventSourceUrl);
-    setEnhencerCampaignAudiences(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, visitorId, ipAddress, userAgent, eventSourceUrl);
+    setEnhencerAudiences(resultObject, customerData, updatedData, audiences, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl);
+    setEnhencerCampaignAudiences(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl);
 
 
     // isAnEnabled is a flag for new audience network structure
@@ -543,7 +545,7 @@ function calculateCustomerScores(scoreObject, model, customerData, updatedData) 
 }
 
 
-function setEnhencerAudiences(resultObject, customerData, updatedData, audiences, facebookAds, fbp, visitorId, ipAddress, userAgent, eventSourceUrl) {
+function setEnhencerAudiences(resultObject, customerData, updatedData, audiences, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl) {
   const now = Date.now();
   const lastEditedAt = new Date(customerData["Last Edited At"]);
   const activeDayCount = (now - lastEditedAt.getTime()) / (1000 * 3600 * 24);
@@ -590,7 +592,8 @@ function setEnhencerAudiences(resultObject, customerData, updatedData, audiences
           "adPlatform": audience.platform,
           "eventId": eventId,
         });
-        resultObject.fbData.push({
+
+        let eventData = {
           "event_name": audience.name,
           "event_id": eventId,
           "event_time": parseInt(Date.now() / 1000),
@@ -602,7 +605,14 @@ function setEnhencerAudiences(resultObject, customerData, updatedData, audiences
             "client_ip_address": ipAddress,
             "client_user_agent": userAgent
           }
-        });
+        }
+
+        if (fbc) {
+          eventData.fbc = fbc
+        }
+
+
+        resultObject.fbData.push(eventData);
       } else {
         resultObject.audiences.push({
           "name": audience.name,
@@ -617,7 +627,7 @@ function setEnhencerAudiences(resultObject, customerData, updatedData, audiences
 }
 
 
-function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, visitorId, ipAddress, userAgent, eventSourceUrl) {
+function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl) {
   const now = Date.now();
   const lastEditedAt = new Date(customerData["Last Edited At"]);
   const activeDayCount = (now - lastEditedAt.getTime()) / (1000 * 3600 * 24);
@@ -671,7 +681,8 @@ function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, c
             camp["bundles"] = bundles
           }
           resultObject.campaigns.push(camp);
-          resultObject.fbData.push({
+
+          let eventData = {
             "event_name": campaign.audiencePath,
             "event_id": eventId,
             "event_time": parseInt(Date.now() / 1000),
@@ -683,7 +694,13 @@ function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, c
               "client_ip_address": ipAddress,
               "client_user_agent": userAgent
             }
-          });
+          }
+
+          if (fbc) {
+            eventData.fbc = fbc
+          }
+  
+          resultObject.fbData.push(eventData);
         } else {
           camp = {
             "name": campaign.audiencePath,
@@ -890,7 +907,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
     let finalEventsList = (campaignsEvents ?? []).concat(audienceEvents ?? [])
     finalEventsList.forEach(event => {
       if (event.adPlatform === "Facebook") {
-        fbData.push({
+        let eventData = {
           "event_name": event.name,
           "event_id": event.eventId,
           "event_time": parseInt(Date.now() / 1000),
@@ -901,7 +918,13 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
             "client_ip_address": ipAddress,
             "client_user_agent": userAgent
           }
-        });
+        }
+
+        if (fbc) {
+          eventData.fbc = fbc
+        }
+
+        fbData.push(eventData);
       }
     })
 
@@ -910,7 +933,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
       accessToken: savedScoreApiResponse.capito,
       fbData,
       userId
-  
+
     })
   }
 
