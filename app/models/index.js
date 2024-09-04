@@ -58,6 +58,9 @@ db.jollyPurchases = require("./sql/jolly.purchase.model.js")(sequelize, Sequeliz
 db.mngListings = require("./sql/mng.listing.model.js")(sequelize, Sequelize);
 db.mngProducts = require("./sql/mng.product.model.js")(sequelize, Sequelize);
 db.mngPurchases = require("./sql/mng.purchase.model.js")(sequelize, Sequelize);
+db.cruiseBookingListings = require("./sql/cruiseBooking.listing.model.js")(sequelize, Sequelize);
+db.cruiseBookingProducts = require("./sql/cruiseBooking.product.model.js")(sequelize, Sequelize);
+db.cruiseBookingPurchases = require("./sql/cruiseBooking.purchase.model.js")(sequelize, Sequelize);
 
 db.mongoose = mongoose;
 db.Mongoose = Mongoose;

@@ -3,6 +3,7 @@ const Purchase = db.purchases;
 const TatilBudur = db.tatilBudurPurchases;
 const Mng = db.mngPurchases;
 const Jolly = db.jollyPurchases;
+const CruiseBooking = db.cruiseBookingPurchases;
 
 const customers = require("../controllers/customer.controller.js");
 
@@ -69,6 +70,14 @@ exports.create = async (req, res) => {
     jollyPurchase['dateTime'] = new Date();
     jollyPurchase['type'] = jollyPurchase['actionName'] === undefined ? "" : jollyPurchase['actionName'];
     Jolly.create(jollyPurchase);
+  }
+  else if (purchase.type === "cruise-booking") {
+    CruiseBooking.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
+
+    const cruiseBookingPurchase = JSON.parse(req.body);
+    cruiseBookingPurchase['dateTime'] = new Date();
+    cruiseBookingPurchase['type'] = cruiseBookingPurchase['actionName'] === undefined ? "" : cruiseBookingPurchase['actionName'];
+    CruiseBooking.create(cruiseBookingPurchase);
   }
   else {
     console.log("Error: type required")

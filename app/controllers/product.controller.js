@@ -3,6 +3,7 @@ const Product = db.products;
 const TatilBudur = db.tatilBudurProducts;
 const Mng = db.mngProducts;
 const Jolly = db.jollyProducts;
+const CruiseBooking = db.cruiseBookingProducts;
 
 const customers = require("../controllers/customer.controller.js");
 
@@ -57,6 +58,12 @@ exports.create = async (req, res) => {
 
     const jollyProduct = JSON.parse(req.body);
     Jolly.create(jollyProduct);
+  }
+  if (product.type === "cruise-booking") {
+    CruiseBooking.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
+
+    const cruiseBookingProduct = JSON.parse(req.body);
+    CruiseBooking.create(cruiseBookingProduct);
   }
 
   customers.upsertCustomer({ body: req.body })
