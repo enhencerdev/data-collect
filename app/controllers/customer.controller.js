@@ -893,6 +893,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
     userId,
     eventSourceUrl,
     fbp,
+    fbc,
     userAgent,
   } = JSON.parse(req.body)
 
