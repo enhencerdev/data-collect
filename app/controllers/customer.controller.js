@@ -312,9 +312,9 @@ exports.update = async (req, res) => {
       const campaigns = project[0].campaigns;
       // console.log("------??????? campaigns", project[0].campaigns)
       const query = getQuery(connectQuery, userID, visitorID);
-      // console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
+      console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
       const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
-      // console.log("query result is here ", queryResult)
+      console.log("query result is here ", queryResult)
       if (!queryResult || queryResult.length === 0) {
         return res.send({ "message": "No result" });
       }
@@ -455,7 +455,7 @@ async function createResultObject({ userID, model, customerData, updatedData, au
     calculateCustomerScores(resultObject, model, customerData, updatedData);
     setEnhencerAudiences(resultObject, customerData, updatedData, audiences, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl);
     setEnhencerCampaignAudiences(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl);
-    scoreRandomForest({ resultObject, customerData, updatedData, userId: userID })
+
 
     // isAnEnabled is a flag for new audience network structure
     if (isAnEnabled && enhencerCategories && model.overallResult !== 0) {
@@ -463,27 +463,6 @@ async function createResultObject({ userID, model, customerData, updatedData, au
     }
   }
   return resultObject;
-}
-
-const scoreRandomForest = async ({ resultObject, customerData, updatedData, userId }) => {
-
-  console.log(">>>>>> will score customer")
-  console.log(customerData)
-
-  try {
-    const scoreResult = await axios.post("http://localhost:8002/score", {
-      visitor_id: customerData.VisitorID,
-      customer_id: userId,
-      features: customerData
-    })
-
-    console.log("--------- scoring result came ", scoreResult)
-    return;
-  } catch (err) {
-    console.log("--------- err while scoring ", err)
-    return;
-  }
-
 }
 
 
@@ -720,7 +699,7 @@ function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, c
           if (fbc) {
             eventData.fbc = fbc
           }
-
+  
           resultObject.fbData.push(eventData);
         } else {
           camp = {
@@ -914,6 +893,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
     userId,
     eventSourceUrl,
     fbp,
+    fbc,
     userAgent,
   } = JSON.parse(req.body)
 
