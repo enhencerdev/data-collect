@@ -10,6 +10,9 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING,
       unique: false
     },
+    price: {
+      type: DataTypes.INTEGER
+    },
     cruiseLength: {
       type: DataTypes.STRING,
       unique: false
