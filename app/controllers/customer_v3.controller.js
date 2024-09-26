@@ -38,25 +38,7 @@ const upsertCustomer = async ({ body }) => {
     segment,
     expected_revenue,
     revenue_segment,
-    score,
-    enhencer_audience,
-    b_audience,
-    enh_conv_rem,
-    enh_dpa_rem,
-    enh_gdn_rem,
-    enh_conv_high_intent_rem,
-    enh_dpa_high_intent_rem,
-    enh_perf_max_rem,
-    enh_search_rem,
-    enh_rlsa_rem,
-    enh_conv_lal,
-    enh_dpa_lal,
-    enh_traffic_lal,
-    enhencer_audience_1,
-    enhencer_audience_2,
-    enhencer_audience_3,
-    enhencer_audience_4,
-    enhencer_audience_5,
+    score
   } = JSON.parse(body);
 
   const customer = {
@@ -79,25 +61,7 @@ const upsertCustomer = async ({ body }) => {
     segment,
     expected_revenue,
     revenue_segment,
-    score,
-    enhencer_audience,
-    b_audience,
-    enh_conv_rem,
-    enh_dpa_rem,
-    enh_gdn_rem,
-    enh_conv_high_intent_rem,
-    enh_dpa_high_intent_rem,
-    enh_perf_max_rem,
-    enh_search_rem,
-    enh_rlsa_rem,
-    enh_conv_lal,
-    enh_dpa_lal,
-    enh_traffic_lal,
-    enhencer_audience_1,
-    enhencer_audience_2,
-    enhencer_audience_3,
-    enhencer_audience_4,
-    enhencer_audience_5,
+    score
   };
 
   // Update customer data
@@ -146,8 +110,6 @@ exports.update = async (req, res) => {
   let facebookAds = {};
   let enhencerCategories;
 
-  const bignessCoefficient = 0.6
-
 
   console.log("start ", userId)
   try {
@@ -163,8 +125,20 @@ exports.update = async (req, res) => {
         'googleAds.conversionId': 1,
         'facebookAds': 1,
         'tiktokAds': 1,
+        'key': 1,
+        'token': 1
       },
     ).lean();
+
+
+    let resultObject = {
+      "score": -1,
+      "audienceEvents": [],
+      capito: facebookAds.accessToken,
+      fbpid: facebookAds.pixelId
+    };
+
+    let fbEvents = []
 
     if (!user) {
       //if user does not exist
@@ -183,48 +157,43 @@ exports.update = async (req, res) => {
 
       return { message: "missing permissions" };
 
-      } else if (!user.token && !user.key) {
-    // } else if (false) {
-
+    } else if (!user.token && !user.key) {
       //if user is found but token and key are not found - no model
-      if (bignessCoefficient < 0.5) {
 
-        resultObject["Likely to buy"] = -1;
-        resultObject["Likely to buy segment"] = -1;
-  
-        resultObject["anEnabled"] = !!user.crmDetails && user.crmDetails.audienceNetworkSwitch
-        resultObject["isAnEnabled"] = !!user.crmDetails && user.crmDetails.isAudienceNetworkEnabled
-  
-        let uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
-        let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
-  
-        resultObject["audiences"] = [
-          {
-            name: "Enhencer Audience 1",
-            adPlatform: "Facebook",
-            eventId: eventId,
-          },
-        ];
-        uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
-        eventId = "eid." + uniqId.substring(5) + "." + visitorID;
-        resultObject["campaigns"] = [
-          {
-            name: "enh_conv_rem",
-            adPlatform: "Facebook",
-            eventId: eventId,
-          },
-        ];
-        updatedData = {
-          score: null,
-          enhencer_audience_1: 1,
-          enh_conv_rem: 1,
-        };
-      } else {
-        return {
-          message: "Wait",
-          bc: bignessCoefficient
+
+
+
+      resultObject["Likely to buy"] = -1;
+      resultObject["Likely to buy segment"] = -1;
+
+      resultObject["anEnabled"] = !!user.crmDetails && user.crmDetails.audienceNetworkSwitch
+      resultObject["isAnEnabled"] = !!user.crmDetails && user.crmDetails.isAudienceNetworkEnabled
+
+      let uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
+      let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
+
+      resultObject["audiences"] = [
+        {
+          name: "Enhencer Audience 1",
+          adPlatform: "Facebook",
+          eventId: eventId,
+        },
+      ];
+      uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
+      eventId = "eid." + uniqId.substring(5) + "." + visitorID;
+      resultObject["campaigns"] = [
+        {
+          name: "enh_conv_rem",
+          adPlatform: "Facebook",
+          eventId: eventId,
         }
-      }
+      ];
+      updatedData = {
+        score: null,
+        enhencer_audience_1: 1,
+        enh_conv_rem: 1,
+      };
+
 
     } else {
 
@@ -241,18 +210,17 @@ exports.update = async (req, res) => {
       const idsJSON = JSON.parse(bytes.toString(CryptoJS.enc.Utf8)); */
 
 
-      console.log("before it")
       const project = await ProjectModel.findOne({
         userId: new Mongoose.Types.ObjectId(userId)
       },
         {
-          "audienceModel.dataPrepQuery": 1
+          "audienceModel.dataPrepQuery": 1,
+          "audienceEvents": 1
         }).lean()
 
 
       if (!project) {
-        console.log("no projectttetetetete")
-        // return res.send({ "message": "no project" });
+        return res.send({ "message": "no project" });
       }
 
       const query = getQuery({
@@ -270,19 +238,7 @@ exports.update = async (req, res) => {
 
       const customerData = queryResult[0]
 
-      const audienceNetworkEnabled = !!user.crmDetails && user.crmDetails.audienceNetworkSwitch;
       const isAudienceNetworkEnabled = !!user.crmDetails && user.crmDetails.isAudienceNetworkEnabled;
-
-      let resultObject = {
-        "Uplift": 1,
-        "Likely to buy": 1, //model.overallResult,
-        "Likely to buy segment": null,
-        "audiences": [],
-        "campaigns": [],
-        "fbData": [],
-        capito: facebookAds.accessToken,
-        fbpid: facebookAds.pixelId
-      };
 
       if (customerData) {
         let score = await scoreRandomForest({
@@ -293,19 +249,79 @@ exports.update = async (req, res) => {
         resultObject.score = score
 
         // isAnEnabled is a flag for new audience network structure
-        if (isAudienceNetworkEnabled && enhencerCategories && model.overallResult !== 0) {
+        if (isAudienceNetworkEnabled && enhencerCategories) {
           resultObject.enhencerCategories = enhencerCategories.toString();
         }
+
+
+        const now = Date.now();
+        const lastEditedAt = new Date(customerData["Last Edited At"]);
+        const daysSinceLastUpdate = (now - lastEditedAt.getTime()) / (1000 * 3600 * 24);
+
+        const purchased = customerData["purchase_time"];
+        const purchasedAt = new Date(purchased);
+        const daysSincePurchase = (now - purchasedAt.getTime()) / (1000 * 3600 * 24);
+
+        const addToBasketAction = customerData["last_add_to_basket_time"];
+        const addToBasketActionAt = new Date(addToBasketAction);
+        const daysSinceAddToBasket = (now - addToBasketActionAt.getTime()) / (1000 * 3600 * 24);
+
+        let events = []
+        project.audienceEvents.forEach(audienceEvent => {
+          const retentionDay = audienceEvent.retentionDay ?? 31;
+
+          if (
+            (daysSinceLastUpdate < retentionDay) &&
+            (
+              (score > audienceEvent.conditions.cutOffPurchasePropensity) ||
+              (audienceEvent.conditions.includeAddtoBaskets && addToBasketAction && daysSinceAddToBasket < retentionDay) ||
+              (audienceEvent.conditions.includePurchases && purchased && daysSincePurchase < retentionDay)
+            )
+          ) {
+
+            const uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
+            const eventId = "eid." + uniqId.substring(5) + "." + visitorID;
+
+            let event = {
+              name: audienceEvent.eventName,
+              adPlatform: audienceEvent.adPlatform,
+              eventId
+            }
+
+            const bundles = createFilterCategories(customerData, audienceEvent.filterBundles);
+            if (bundles.length > 0) {
+              event.bundles = bundles
+            }
+
+            if (fbp) {
+              let fbEvent = {
+                "event_name": audienceEvent.eventName,
+                "event_id": eventId,
+                "event_time": parseInt(Date.now() / 1000),
+                "action_source": "website",
+                "event_source_url": eventSourceUrl,
+                "user_data": {
+                  "fbp": fbp,
+                  "client_ip_address": ipAddress,
+                  "client_user_agent": userAgent
+                }
+              }
+  
+              fbEvents.push(fbEvent)
+            }
+
+
+            events.push(event)
+          }
+        })
+
+        resultObject.audienceEvents = events;
       }
 
-
-      resultObject.anEnabled = audienceNetworkEnabled;
       resultObject.isAnEnabled = isAudienceNetworkEnabled;
-      if (user.tiktokAds) resultObject["tiktok"] = 1
+      if (user.tiktokAds) resultObject.tiktok = 1
 
     }
-
-
 
     resultObject.country = user.country;
     if (!resultObject.country || resultObject.country === "") {
@@ -318,19 +334,35 @@ exports.update = async (req, res) => {
     }
 
 
+
+    if (fbEvents.length > 0) {}
+
+
+    if (facebookAds.pixelId && facebookAds.accessToken && fbEvents.length) {
+      await sendEventsToFacebookThroughConversionAPI({
+        pixelId: facebookAds.pixelId,
+        accessToken: facebookAds.accessToken,
+        fbEvents,
+        userId: userId
+      });
+    }
+
+    // res.send(JSON.stringify(resultObject));
+    res.send(resultObject);
+
   } catch (error) {
     res.status(500).send({
       message:
-        error.message || "Some error occurred while creating the Customer.",
+        error.message || "Some error occurred while scoring the Customer.",
     });
   }
-  return res.send("yessss")
+  // return res.send("yessss")
 
-  Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userId;
-
+  /* Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userId;
+ 
   const transaction = await Customer.sequelize.transaction();
   try {
-
+ 
     const selectedCustomer = await getById(visitorID);
     if (facebookAds.pixelId && facebookAds.accessToken) {
       await sendEventsToFacebookThroughConversionAPI({
@@ -340,21 +372,21 @@ exports.update = async (req, res) => {
         userId: userId
       });
     }
-
+ 
     const { fbData, ...result } = resultObject;
-
+ 
     res.status(202).send(JSON.stringify(result));
     return result;
   } catch (error) {
-
+ 
     await transaction.rollback();
-
+ 
     res.status(200).send({
       message:
         error.message || "Error occured while scoring",
     });
     return
-  }
+  } */
 
 };
 
@@ -400,131 +432,6 @@ const scoreRandomForest = async ({ resultObject, customerData, updatedData, user
     return;
   }
 
-}
-
-function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl) {
-  const now = Date.now();
-  const lastEditedAt = new Date(customerData["Last Edited At"]);
-  const activeDayCount = (now - lastEditedAt.getTime()) / (1000 * 3600 * 24);
-
-  const purchased = customerData["purchase_time"];
-  const purchasedAt = new Date(purchased);
-  const purchaseDayCount = (now - purchasedAt.getTime()) / (1000 * 3600 * 24);
-
-  const addToBasketAction = customerData["last_add_to_basket_time"];
-  const addToBasketActionAt = new Date(addToBasketAction);
-  const addToBasketActionDayCount = (now - addToBasketActionAt.getTime()) / (1000 * 3600 * 24);
-
-
-  let camp;
-  let isEnhencerAudience;
-  let audience;
-  let bundles;
-  let day;
-  campaigns.forEach(function (campaign) {
-    isEnhencerAudience = 0;
-    audience = campaign.audience;
-    bundles = [];
-    if (audience.selectedSegmentNos) {
-      day = audience.day ? audience.day : 31;
-      if (audience.selectedSegmentNos.indexOf(resultObject["Likely to buy segment"]) > -1 && activeDayCount <= day) {
-        if (audience.includePurchased === false) {
-          if (purchased === null || purchaseDayCount > 3) {
-            isEnhencerAudience = 1;
-          }
-        } else {
-          isEnhencerAudience = 1;
-        }
-      } else {
-        if (audience.includeAddtoBasket === true) {
-          if (addToBasketActionDayCount <= 31) {
-            isEnhencerAudience = 1;
-          }
-        }
-      }
-
-      if (isEnhencerAudience) {
-        bundles = createFilterCategories(customerData, campaign.filterBundles);
-        if (facebookAds && facebookAds.pixelId && facebookAds.accessToken && fbp && campaign.adPlatform === "Facebook") {
-          const uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
-          const eventId = "eid." + uniqId.substring(5) + "." + visitorId;
-          camp = {
-            "name": campaign.audiencePath,
-            "adPlatform": campaign.adPlatform,
-            "eventId": eventId,
-          };
-          if (bundles.length > 0) {
-            camp["bundles"] = bundles
-          }
-          resultObject.campaigns.push(camp);
-
-          let eventData = {
-            "event_name": campaign.audiencePath,
-            "event_id": eventId,
-            "event_time": parseInt(Date.now() / 1000),
-            "action_source": "website",
-            "event_source_url": eventSourceUrl,
-            "user_data": {
-              "fbp": fbp,
-              //"external_id": visitorId,
-              "client_ip_address": ipAddress,
-              "client_user_agent": userAgent
-            }
-          }
-
-          if (fbc) {
-            eventData.fbc = fbc
-          }
-
-          resultObject.fbData.push(eventData);
-        } else {
-          camp = {
-            "name": campaign.audiencePath,
-            "adPlatform": campaign.adPlatform,
-          };
-          if (bundles.length > 0) {
-            camp["bundles"] = bundles
-          }
-          resultObject.campaigns.push(camp);
-        }
-        updatedData[campaign["audiencePath"]] = 1;
-      } else {
-        updatedData[campaign["audiencePath"]] = 0;
-      }
-    }
-  });
-}
-
-function filterCategories(customerData, categories) {
-  let count = 0;
-  let categoryName;
-  if (!categories || categories.length === 0) {
-    return true;
-  }
-  for (let category of categories) {
-    if (category.type === "Product") {
-      categoryName = category.name + "(Distinct Count Product)";
-      if (customerData[categoryName] > 0) {
-        count++
-        break;
-      }
-    } else {
-      if (category.type === "Listing1" || category.type === "Listing") {
-        categoryName = category.name + "(Listing Page Visit PC1)";
-        if (customerData[categoryName] > 0) {
-          count++
-          break;
-        }
-      } else if (category.type === "Listing2") {
-        categoryName = category.name + "(Listing Page Visit PC2)";
-        if (customerData[categoryName] > 0) {
-          count++
-          break;
-        }
-      }
-    }
-  };
-  return count !== 0 ? true : false;
 }
 
 function createFilterCategories(customerData, filterBundles) {
@@ -577,37 +484,21 @@ function createFilterCategories(customerData, filterBundles) {
   return bundles;
 }
 
-async function getById(visitorId) {
-  try {
-    return await Customer.findById(visitorId, { rejectOnEmpty: true });
-
-  } catch (error) {
-    if (error.name === 'SequelizeEmptyResultError') {
-      const notFoundError = new Error('NotFoundError');
-      notFoundError.details = `Customer with visitorId ${visitorId} can't be found.`;
-
-      throw notFoundError;
-    }
-
-    throw error;
-  }
-}
-
 async function sendEventsToFacebookThroughConversionAPI({
   pixelId,
   accessToken,
-  fbData,
+  fbEvents,
   userId
 }) {
   console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
   console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
 
-  if (fbData && fbData.length > 0) {
+  if (fbEvents && fbEvents.length > 0) {
     console.log("inside")
     let url = `https://graph.facebook.com/v20.0/${pixelId}/events?access_token=${accessToken}`
     try {
       const fbResult = await axios.post(url, {
-        data: fbData
+        data: fbEvents
       })
       console.log("--------- result came for conversions api for user ", userId)
       return;
@@ -676,16 +567,15 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
 
   if (savedScoreApiResponse && savedScoreApiResponse.fbpid && savedScoreApiResponse.capito && fbp) {
 
-    const campaignsEvents = savedScoreApiResponse.campaigns
-    const audienceEvents = savedScoreApiResponse.audiences
+    
+    const audienceEvents = savedScoreApiResponse.audienceEvents ?? []
 
 
-    let finalEventsList = (campaignsEvents ?? []).concat(audienceEvents ?? [])
-    finalEventsList.forEach(event => {
-      if (event.adPlatform === "Facebook") {
+    audienceEvents.forEach(audienceEvent => {
+      if (audienceEvent.adPlatform === "Facebook") {
         let eventData = {
-          "event_name": event.name,
-          "event_id": event.eventId,
+          "event_name": audienceEvent.eventName,
+          "event_id": audienceEvent.eventId,
           "event_time": parseInt(Date.now() / 1000),
           "action_source": "website",
           "event_source_url": eventSourceUrl,
