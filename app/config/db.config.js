@@ -11,7 +11,7 @@ module.exports = {
     host: "localhost",
     database: "enhencer",
     dialect: "mysql",
-    logging: false
+    logging: true
   },
   production: {
     username: process.env.MYSQL_USERNAME,

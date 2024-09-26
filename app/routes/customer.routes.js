@@ -6,14 +6,16 @@ module.exports = app => {
   
     // Create a new Customer
     router.post("/", customers.create);
+    router.post("/v3", customers_v3.create);
+    
   
-    //Update a Customer with id
+    // Score a Customer with id
     router.put("/:id", customers.update);
+    router.put("/v3/:id", customers_v3.update);
     
     router.post("/fbcapi/", customers.sendEventsToFacebookThroughConversionAPIWithoutScoring);
+    router.post("v3/fbcapi/", customers_v3.sendEventsToFacebookThroughConversionAPIWithoutScoring);
     
-    router.put("/v3/:id", customers_v3.update);
-
   
     app.use('/api/customers', router);
   };

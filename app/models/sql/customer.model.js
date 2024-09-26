@@ -23,15 +23,6 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.STRING,
       unique: false
     },
-    scrollPercentage: {
-      type: Sequelize.INTEGER
-    },
-    searched: {
-      type: Sequelize.INTEGER
-    },
-    sessionDuration: {
-      type: Sequelize.INTEGER
-    },
     add_to_basket: {
       type: Sequelize.INTEGER
     },

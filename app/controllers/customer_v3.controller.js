@@ -10,7 +10,7 @@ const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
 
 exports.create = async (req, res) => {
-  upsertCustomer({ body: req.body })
+  // upsertCustomer({ body: req.body })
   res.status(200).send({ result: "success" });
 }
 
@@ -21,47 +21,26 @@ const upsertCustomer = async ({ body }) => {
     userId,
     visitorID,
     customerID,
-    city,
-    country,
     deviceType,
     scrollPercentage,
     searched,
     sessionDuration,
     actionType,
-    add_to_basket,
-    last_add_to_basket_time,
-    product_viewer,
-    last_product_view_time,
-    purchase_time,
     source,
     purchase_propensity,
-    segment,
-    expected_revenue,
-    revenue_segment,
-    score
   } = JSON.parse(body);
 
   const customer = {
+    userId,
     visitorID,
     customerID,
-    city,
-    country,
     deviceType,
     scrollPercentage,
     searched,
     sessionDuration,
     actionType,
-    add_to_basket,
-    last_add_to_basket_time,
-    product_viewer,
-    last_product_view_time,
-    purchase_time,
     source,
     purchase_propensity,
-    segment,
-    expected_revenue,
-    revenue_segment,
-    score
   };
 
   // Update customer data
@@ -85,20 +64,7 @@ exports.update = async (req, res) => {
   const ipAddress = requestIp.getClientIp(req);
   const {
     visitorID = req.params.id,
-    customerID,
     userId,
-    city,
-    country,
-    deviceType,
-    scrollPercentage,
-    searched,
-    sessionDuration,
-    add_to_basket,
-    last_add_to_basket_time,
-    product_viewer,
-    last_product_view_time,
-    purchase_time,
-    source,
     fbp,
     fbc,
     userAgent,
@@ -306,7 +272,11 @@ exports.update = async (req, res) => {
                   "client_user_agent": userAgent
                 }
               }
-  
+
+              if (fbc) {
+                eventData.fbc = fbc
+              }
+
               fbEvents.push(fbEvent)
             }
 
@@ -335,19 +305,30 @@ exports.update = async (req, res) => {
 
 
 
-    if (fbEvents.length > 0) {}
+    if (fbEvents.length > 0) { }
 
 
     if (facebookAds.pixelId && facebookAds.accessToken && fbEvents.length) {
-      await sendEventsToFacebookThroughConversionAPI({
+      sendEventsToFacebookThroughConversionAPI({
         pixelId: facebookAds.pixelId,
         accessToken: facebookAds.accessToken,
         fbEvents,
-        userId: userId
+        userId
       });
     }
 
     // res.send(JSON.stringify(resultObject));
+
+    updateVisitorAfterScoring({
+      userId,
+      visitorData: {
+        visitorID: visitorID,
+        purchase_propensity: resultObject.score,
+        audience_events: JSON.stringify(resultObject.audienceEvents.map(event => event.eventName)),
+      }
+    })
+
+
     res.send(resultObject);
 
   } catch (error) {
@@ -356,39 +337,28 @@ exports.update = async (req, res) => {
         error.message || "Some error occurred while scoring the Customer.",
     });
   }
-  // return res.send("yessss")
-
-  /* Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userId;
- 
-  const transaction = await Customer.sequelize.transaction();
-  try {
- 
-    const selectedCustomer = await getById(visitorID);
-    if (facebookAds.pixelId && facebookAds.accessToken) {
-      await sendEventsToFacebookThroughConversionAPI({
-        pixelId: facebookAds.pixelId,
-        accessToken: facebookAds.accessToken,
-        fbData: resultObject.fbData,
-        userId: userId
-      });
-    }
- 
-    const { fbData, ...result } = resultObject;
- 
-    res.status(202).send(JSON.stringify(result));
-    return result;
-  } catch (error) {
- 
-    await transaction.rollback();
- 
-    res.status(200).send({
-      message:
-        error.message || "Error occured while scoring",
-    });
-    return
-  } */
-
 };
+
+const updateVisitorAfterScoring = async ({
+  visitorData,
+  userId
+}) => {
+
+  Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userId;
+  const transaction = await Customer.sequelize.transaction();
+
+  try {
+
+    await Customer.update(visitorData, { transaction });
+    await transaction.commit();
+
+    return true;
+  } catch (error) {
+    await transaction.rollback();
+    return false
+  }
+
+}
 
 function getQuery({
   dataPrepQuery,
@@ -520,15 +490,6 @@ async function sendEventsToFacebookThroughConversionAPI({
 }
 
 function correctCustomerData(customerData) {
-  customerData["city"] =
-    customerData["city"] === undefined || customerData["city"] === "undefined"
-      ? ""
-      : customerData["city"];
-  customerData["country"] =
-    customerData["country"] === undefined ||
-      customerData["country"] === "undefined"
-      ? ""
-      : customerData["country"];
   customerData["deviceType"] =
     customerData["deviceType"] === undefined ||
       customerData["deviceType"] === "undefined"
@@ -541,11 +502,11 @@ function correctCustomerData(customerData) {
 
   if (customerData["actionType"]) {
     if (customerData["actionType"] === "product") {
-      customerData["product_viewer"] = 1;
       customerData["last_product_view_time"] = new Date();
+
     } else if (customerData["actionType"] === "basket") {
-      customerData["add_to_basket"] = 1;
       customerData["last_add_to_basket_time"] = new Date();
+
     } else if (customerData["actionType"] === "purchase") {
       customerData["purchase_time"] = new Date();
     }
@@ -567,7 +528,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
 
   if (savedScoreApiResponse && savedScoreApiResponse.fbpid && savedScoreApiResponse.capito && fbp) {
 
-    
+
     const audienceEvents = savedScoreApiResponse.audienceEvents ?? []
 
 
