@@ -274,7 +274,7 @@ exports.update = async (req, res) => {
               }
 
               if (fbc) {
-                eventData.fbc = fbc
+                fbEvent.fbc = fbc
               }
 
               fbEvents.push(fbEvent)
