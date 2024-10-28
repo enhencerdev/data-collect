@@ -608,7 +608,7 @@ function setEnhencerAudiences(resultObject, customerData, updatedData, audiences
         }
 
         if (fbc) {
-          eventData.fbc = fbc
+          eventData.user_data.fbc = fbc
         }
 
 
@@ -697,7 +697,7 @@ function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, c
           }
 
           if (fbc) {
-            eventData.fbc = fbc
+            eventData.user_data.fbc = fbc
           }
   
           resultObject.fbData.push(eventData);
@@ -922,7 +922,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
         }
 
         if (fbc) {
-          eventData.fbc = fbc
+          eventData.user_data.fbc = fbc
         }
 
         fbData.push(eventData);
