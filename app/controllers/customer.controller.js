@@ -699,7 +699,6 @@ function setEnhencerCampaignAudiences(resultObject, customerData, updatedData, c
           if (fbc) {
             eventData.user_data.fbc = fbc
           }
-  
           resultObject.fbData.push(eventData);
         } else {
           camp = {
