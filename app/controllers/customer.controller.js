@@ -243,7 +243,7 @@ exports.update = async (req, res) => {
       return { message: "missing permissions" };
 
     } else if (!user[0].token && !user[0].key) {
-      console.log("------??????? 1 ", userID)
+      // console.log("------??????? 1 ", userID)
       //if user is found but token and key are not found - no model
       resultObject["Likely to buy"] = -1;
       resultObject["Likely to buy segment"] = -1;
@@ -273,9 +273,9 @@ exports.update = async (req, res) => {
         enhencer_audience_1: 1,
         enh_conv_rem: 1,
       };
-      console.log("------??????? 2 ", userID)
+      // console.log("------??????? 2 ", userID)
     } else {
-      console.log("------??????? 3 ", userID)
+      // console.log("------??????? 3 ", userID)
       // has model
       if (user[0].facebookAds) {
         facebookAds = user[0].facebookAds;
@@ -297,30 +297,30 @@ exports.update = async (req, res) => {
         audiences: 1,
         campaigns: 1,
       };
-      console.log("------??????? 4 ", userID)
+      // console.log("------??????? 4 ", userID)
       const aggregateQuery = [{ $match: matchQuery }, { $project: projectQuery }];
       const projectAggregation = ProjectModel.aggregate(aggregateQuery);
       const project = await projectAggregation.exec(); //get project data
 
       if (project.length === 0) {
-        console.log("no project aga ", userID)
+        // console.log("no project aga ", userID)
         return res.send({ "message": "no project" });
       }
 
       const connectQuery = project[0].connectQuery;
       const audiences = project[0].audiences;
       const campaigns = project[0].campaigns;
-      // console.log("------??????? campaigns", project[0].campaigns)
+      console.log("------??????? campaigns", project[0].campaigns)
       const query = getQuery(connectQuery, userID, visitorID);
-      console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
+      // console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
       const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
-      console.log("query result is here ", queryResult)
+      // console.log("query result is here ", queryResult)
       if (!queryResult || queryResult.length === 0) {
         return res.send({ "message": "No result" });
       }
       const [customerData, metadata] = queryResult
       // const ModelModel = mongoose.model('model', PurchaseModelSchema, 'models');
-      console.log("------??????? 5 ", userID)
+      // console.log("------??????? 5 ", userID)
 
       const modelsAggregation = ModelModel.aggregate([
         { $match: { $and: [{ userId: new Mongoose.Types.ObjectId(userID) }, { projectId: new Mongoose.Types.ObjectId(projectId) }] } },
@@ -341,7 +341,7 @@ exports.update = async (req, res) => {
       const model = models[0];
       const audienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.audienceNetworkSwitch;
       const isAudienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled;
-      console.log("------??????? 6 ", userID)
+      // console.log("------??????? 6 ", userID)
       resultObject = await createResultObject({
         userID,
         model,
@@ -364,7 +364,7 @@ exports.update = async (req, res) => {
       resultObject.isAnEnabled = isAudienceNetworkEnabled;
       if (user[0].tiktokAds) resultObject["tiktok"] = 1
 
-      console.log("------??????? 7 ", userID)
+      // console.log("------??????? 7 ", userID)
     }
 
     resultObject.country = user[0].country;
@@ -378,9 +378,9 @@ exports.update = async (req, res) => {
     }
 
 
-    console.log("------??????? 8 ", userID)
+    // console.log("------??????? 8 ", userID)
   } catch (error) {
-    console.log("------??????? 9 ", userID, error)
+    // console.log("------??????? 9 ", userID, error)
     res.status(500).send({
       message:
         error.message || "Some error occurred while creating the Customer.",
@@ -391,7 +391,7 @@ exports.update = async (req, res) => {
 
   const transaction = await Customer.sequelize.transaction();
   try {
-    console.log("------??????? 10 ", userID)
+    // console.log("------??????? 10 ", userID)
     const selectedCustomer = await getById(visitorID);
     if (facebookAds.pixelId && facebookAds.accessToken) {
       await sendEventsToFacebookThroughConversionAPI({
@@ -401,17 +401,17 @@ exports.update = async (req, res) => {
         userId: userID
       });
     }
-    console.log("------??????? 11 ", userID)
+    // console.log("------??????? 11 ", userID)
     const { fbData, ...result } = resultObject;
     await selectedCustomer.update(updatedData, { transaction });
     await transaction.commit();
-    console.log("------??????? 22 ", userID)
+    // console.log("------??????? 22 ", userID)
     res.status(202).send(JSON.stringify(result));
     return result;
   } catch (error) {
-    console.log("------??????? 33 ", userID)
+    // console.log("------??????? 33 ", userID)
     await transaction.rollback();
-    console.log("------??????? 44 ", userID)
+    // console.log("------??????? 44 ", userID)
     res.status(200).send({
       message:
         error.message || "Error occured while scoring",
@@ -822,8 +822,8 @@ async function sendEventsToFacebookThroughConversionAPI({
   fbData,
   userId
 }) {
-  console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
-  console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
+  // console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
+  // console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
 
   if (fbData && fbData.length > 0) {
     console.log("inside")
