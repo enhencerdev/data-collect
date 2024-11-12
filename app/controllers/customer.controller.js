@@ -306,7 +306,7 @@ exports.update = async (req, res) => {
       const connectQuery = project[0].connectQuery;
       const audiences = project[0].audiences;
       const campaigns = project[0].campaigns;
-      console.log("------??????? campaigns", project[0].campaigns)
+      // console.log("------??????? campaigns", project[0].campaigns)
       const query = getQuery(connectQuery, userID, visitorID);
       // console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
       const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
