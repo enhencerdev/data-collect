@@ -228,23 +228,20 @@ exports.update = async (req, res) => {
     if (user.length === 0) {
       //if user does not exist
 
-      res.status(404).send({
+      return res.status(404).send({
         message: "No user or missing permissions."
       });
 
-      return { message: "no user" };
-
     } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring") {
-      //if user status is not recurring
-      res.status(404).send({
+      // if user status is not recurring
+
+      return res.status(404).send({
         message: "Missing permissions."
       });
 
-      return { message: "missing permissions" };
-
     } else if (!user[0].token && !user[0].key) {
-      // console.log("------??????? 1 ", userID)
       //if user is found but token and key are not found - no model
+
       resultObject["Likely to buy"] = -1;
       resultObject["Likely to buy segment"] = -1;
 
@@ -273,10 +270,9 @@ exports.update = async (req, res) => {
         enhencer_audience_1: 1,
         enh_conv_rem: 1,
       };
-      // console.log("------??????? 2 ", userID)
     } else {
-      // console.log("------??????? 3 ", userID)
       // has model
+      
       if (user[0].facebookAds) {
         facebookAds = user[0].facebookAds;
       }
@@ -380,8 +376,7 @@ exports.update = async (req, res) => {
 
     // console.log("------??????? 8 ", userID)
   } catch (error) {
-    // console.log("------??????? 9 ", userID, error)
-    res.status(500).send({
+    return res.status(500).send({
       message:
         error.message || "Some error occurred while creating the Customer.",
     });
@@ -391,7 +386,6 @@ exports.update = async (req, res) => {
 
   const transaction = await Customer.sequelize.transaction();
   try {
-    // console.log("------??????? 10 ", userID)
     const selectedCustomer = await getById(visitorID);
     if (facebookAds.pixelId && facebookAds.accessToken) {
       await sendEventsToFacebookThroughConversionAPI({
@@ -401,22 +395,15 @@ exports.update = async (req, res) => {
         userId: userID
       });
     }
-    // console.log("------??????? 11 ", userID)
     const { fbData, ...result } = resultObject;
     await selectedCustomer.update(updatedData, { transaction });
     await transaction.commit();
-    // console.log("------??????? 22 ", userID)
-    res.status(202).send(JSON.stringify(result));
-    return result;
+    return res.status(202).send(JSON.stringify(result));
   } catch (error) {
-    // console.log("------??????? 33 ", userID)
     await transaction.rollback();
-    // console.log("------??????? 44 ", userID)
-    res.status(200).send({
-      message:
-        error.message || "Error occured while scoring",
+    return res.status(200).send({
+      message: error.message || "Error occured while scoring",
     });
-    return
   }
 
 };
