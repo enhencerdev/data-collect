@@ -9,12 +9,14 @@ const UserModel = db.userModel;
 const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
 
+const redis = require('../config/redis');
+
 exports.create = async (req, res) => {
   try {
     await upsertCustomer({ body: req.body });
     res.status(200).send({ result: "success" });
   } catch (error) {
-    res.status(500).send({ 
+    res.status(500).send({
       message: error.message || "Error occurred while creating customer"
     });
   }
@@ -100,6 +102,18 @@ const upsertCustomer = async ({ body }) => {
     enhencer_audience_5,
   };
 
+  // get the missing customer tables set from redis
+
+  if (redis) {
+    const missingCustomerTables = await redis.smembers('missing_customer_tables');
+    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
+      console.log(`=================== Table missing for userID ${userID}`);
+      return {
+        message: "failure"
+      }
+    }
+  }
+
   // Update customer data
   correctCustomerData(customer);
 
@@ -108,10 +122,17 @@ const upsertCustomer = async ({ body }) => {
 
   // Save Customer in the database
   try {
-    const createdCustomer = await Customer.upsert(customer);
-    return "success"
+    await Customer.upsert(customer);
+    return {
+      message: "success",
+
+    }
   } catch (error) {
-    console.log(error);
+
+    if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
+      await redis.sadd('missing_customer_tables', userID);
+      console.log(`=================== Added userID ${userID} to missing_customer_tables set in Redis`);
+    }
     return error
   }
 };
@@ -278,7 +299,7 @@ exports.update = async (req, res) => {
       };
     } else {
       // has model
-      
+
       if (user[0].facebookAds) {
         facebookAds = user[0].facebookAds;
       }
@@ -845,35 +866,25 @@ async function sendEventsToFacebookThroughConversionAPI({
 }
 
 function correctCustomerData(customerData) {
-  customerData["city"] =
-    customerData["city"] === undefined || customerData["city"] === "undefined"
-      ? ""
-      : customerData["city"];
-  customerData["country"] =
-    customerData["country"] === undefined ||
-      customerData["country"] === "undefined"
-      ? ""
-      : customerData["country"];
-  customerData["deviceType"] =
-    customerData["deviceType"] === undefined ||
-      customerData["deviceType"] === "undefined"
-      ? ""
-      : customerData["deviceType"];
+  // Set empty string for undefined fields
+  ['city', 'country', 'deviceType'].forEach(field => {
+    customerData[field] = customerData[field] === undefined || customerData[field] === "undefined" ? "" : customerData[field];
+  });
 
-  if (customerData["source"]) {
-    customerData["source"] = customerData["source"].substring(0, 120)
+  // Truncate source if exists
+  if (customerData.source) {
+    customerData.source = customerData.source.substring(0, 120);
   }
 
-  if (customerData["actionType"]) {
-    if (customerData["actionType"] === "product") {
-      customerData["product_viewer"] = 1;
-      customerData["last_product_view_time"] = new Date();
-    } else if (customerData["actionType"] === "basket") {
-      customerData["add_to_basket"] = 1;
-      customerData["last_add_to_basket_time"] = new Date();
-    } else if (customerData["actionType"] === "purchase") {
-      customerData["purchase_time"] = new Date();
-    }
+  // Set action type specific fields
+  const actionMap = {
+    'product': { product_viewer: 1, last_product_view_time: new Date() },
+    'basket': { add_to_basket: 1, last_add_to_basket_time: new Date() },
+    'purchase': { purchase_time: new Date() }
+  };
+
+  if (customerData.actionType && actionMap[customerData.actionType]) {
+    Object.assign(customerData, actionMap[customerData.actionType]);
   }
 }
 
