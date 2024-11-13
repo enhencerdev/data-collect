@@ -10,8 +10,14 @@ const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
 
 exports.create = async (req, res) => {
-  upsertCustomer({ body: req.body })
-  res.status(200).send({ result: "success" });
+  try {
+    await upsertCustomer({ body: req.body });
+    res.status(200).send({ result: "success" });
+  } catch (error) {
+    res.status(500).send({ 
+      message: error.message || "Error occurred while creating customer"
+    });
+  }
 }
 
 
