@@ -4,6 +4,10 @@ const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: process.env.REDIS_PORT || 6379,
   password: process.env.REDIS_PASSWORD,
+  tls: {
+    // Enable SSL/TLS
+    rejectUnauthorized: process.env.NODE_ENV === 'production' // Verify certificates in production
+  },
   // Optional configurations
   retryStrategy: (times) => {
     const delay = Math.min(times * 50, 2000);
