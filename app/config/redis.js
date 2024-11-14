@@ -3,7 +3,7 @@ const Redis = require('ioredis');
 const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD,
+  ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
   tls: {
     // Enable SSL/TLS
     rejectUnauthorized: process.env.NODE_ENV === 'production' // Verify certificates in production

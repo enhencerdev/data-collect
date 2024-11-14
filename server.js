@@ -21,6 +21,16 @@ app.use(compression())
 // parse requests of content-type - application/x-www-form-urlencoded
 // app.use(express.urlencoded({ extended: true }));
 
+app.use((req, res, next) => {
+  const start = Date.now();  // Record start time
+  res.on('finish', () => {   // When the response is finished
+      const duration = Date.now() - start;  // Calculate duration
+      console.log(`Request URL: ${req.originalUrl} - Response Time: ${duration}ms`);
+  });
+  next();
+});
+
+
 const db = require("./app/models");
 
 db.sequelize.sync()
