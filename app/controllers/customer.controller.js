@@ -336,9 +336,8 @@ exports.update = async (req, res) => {
       // console.log("------??????? campaigns", project[0].campaigns)
       const query = getQuery(connectQuery, userID, visitorID);
       // console.log("------??????? 4.5 ", userID, visitorID, " queryyyy: ", query)
-      console.time("query time")
+      
       const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
-      console.timeEnd("query time")
       // console.log("query result is here ", queryResult)
       if (!queryResult || queryResult.length === 0) {
         return res.send({ "message": "No result" });
