@@ -3,6 +3,8 @@ const cors = require("cors");
 const bodyParser = require('body-parser');
 const compression = require('compression');
 const methodOverride = require('method-override');
+const rateLimit = require('express-rate-limit');
+const requestIp = require('request-ip');
 
 const app = express();
 
@@ -10,8 +12,49 @@ const app = express();
   origin: "http://localhost:8081"
 }; */
 
+
+// Add this to your Express app configuration
+const requestLogger = (req, res, next) => {
+  const clientIp = requestIp.getClientIp(req);
+  const timestamp = new Date().toISOString();
+  
+  console.log({
+    timestamp,
+    ip: clientIp,
+    method: req.method,
+    path: req.path,
+    userID: req.body?.userID || req.params?.id,
+    userAgent: req.headers['user-agent']
+  });
+  
+  next();
+};
+
+// Basic rate limiting
+const limiter = rateLimit({
+  windowMs:  60 * 1000, // 1 minute
+  max: 15, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  
+  // Add logging for rate limit hits
+  handler: (req, res) => {
+    console.warn('Rate limit exceeded:', {
+      ip: requestIp.getClientIp(req),
+      path: req.path,
+      userAgent: req.headers['user-agent']
+    });
+    res.status(429).send('Too many requests');
+  }
+});
+
+
 app.use(methodOverride('X-HTTP-Method-Override'))
 app.use(cors());
+
+app.use(requestLogger);
+app.use(limiter);
 
 // parse requests of content-type - application/json
 // app.use(express.json());
