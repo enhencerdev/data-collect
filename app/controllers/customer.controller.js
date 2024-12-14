@@ -844,13 +844,12 @@ async function sendEventsToFacebookThroughConversionAPI({
   // console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
 
   if (fbData && fbData.length > 0) {
-    console.log("inside")
     let url = `https://graph.facebook.com/v20.0/${pixelId}/events?access_token=${accessToken}`
     try {
       const fbResult = await axios.post(url, {
         data: fbData
       })
-      console.log("--------- result came for conversions api for user ", userId)
+      // console.log("--------- result came for conversions api for user ", userId)
       return;
     } catch (err) {
       console.log("catch fb conv api error for user ", userId, ": ", {
