@@ -12,19 +12,20 @@ const app = express();
   origin: "http://localhost:8081"
 }; */
 
-app.use(methodOverride('X-HTTP-Method-Override'))
+// First, set up parsing
+app.use(express.json());
+app.use(express.text());
+app.use(express.urlencoded({ extended: true }));
+
+// Then compression and other middleware
+app.use(compression());
+app.use(methodOverride('X-HTTP-Method-Override'));
 app.use(cors());
 
+// Apply rate limiter after parsing
 app.use(limiter);
 
-// parse requests of content-type - application/json
-// app.use(express.json());
-app.use(bodyParser.text({ type: 'text/plain' }))
-app.use(compression())
-
-// parse requests of content-type - application/x-www-form-urlencoded
-// app.use(express.urlencoded({ extended: true }));
-
+// Then your request logger
 app.use(requestLogger);
 
 const db = require("./app/models");
