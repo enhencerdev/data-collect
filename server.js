@@ -23,7 +23,7 @@ app.use(methodOverride('X-HTTP-Method-Override'));
 app.use(cors());
 
 // Apply rate limiter after parsing
-app.use(limiter);
+// app.use(limiter);
 
 // Then your request logger
 app.use(requestLogger);
