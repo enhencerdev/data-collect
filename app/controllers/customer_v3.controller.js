@@ -324,7 +324,7 @@ exports.update = async (req, res) => {
       visitorData: {
         visitorID: visitorID,
         purchase_propensity: resultObject.score,
-        audience_events: JSON.stringify(resultObject.audienceEvents.map(event => event.eventName)),
+        audience_events: JSON.stringify(resultObject.audienceEvents.map(event => event.eventName.replace("enh_", ""))),
       }
     })
 
@@ -388,7 +388,7 @@ const scoreRandomForest = async ({ resultObject, customerData, updatedData, user
   console.log(customerData)
 
   try {
-    const scoreResult = await axios.post("http://localhost:8002/score", {
+    const scoreResult = await axios.post(`${process.env.PYTHON_AI_AUDIENCE_MODEL_URL || 'http://localhost:8002'}/score`, {
       visitor_id: customerData.VisitorID,
       customer_id: userId,
       features: customerData
