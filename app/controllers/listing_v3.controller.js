@@ -25,6 +25,11 @@ exports.create = async (req, res) => {
     productCategory3,
   };
 
+  console.log("================================================")
+  console.log("listing")
+  console.log(req.body)
+  console.log("================================================")
+
   correctListingData(listing, type);
   // Save Listing in the database
   if (type === "ecommerce") {

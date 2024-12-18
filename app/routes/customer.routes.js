@@ -14,7 +14,7 @@ module.exports = app => {
     router.put("/v3/:id", customers_v3.update);
     
     router.post("/fbcapi/", customers.sendEventsToFacebookThroughConversionAPIWithoutScoring);
-    router.post("v3/fbcapi/", customers_v3.sendEventsToFacebookThroughConversionAPIWithoutScoring);
+    router.post("/v3/fbcapi/", customers_v3.sendEventsToFacebookThroughConversionAPIWithoutScoring);
     
   
     app.use('/api/customers', router);

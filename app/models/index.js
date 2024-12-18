@@ -49,6 +49,9 @@ db.customers = require("./sql/customer.model.js")(sequelize, Sequelize);
 db.listings = require("./sql/listing.model.js")(sequelize, Sequelize);
 db.products = require("./sql/product.model.js")(sequelize, Sequelize);
 db.purchases = require("./sql/purchase.model.js")(sequelize, Sequelize);
+
+db.customers_v3 = require("./sql/customer_v3.model.js")(sequelize, Sequelize);
+
 db.tatilBudurListings = require("./sql/tatilBudur.listing.model.js")(sequelize, Sequelize);
 db.tatilBudurProducts = require("./sql/tatilBudur.product.model.js")(sequelize, Sequelize);
 db.tatilBudurPurchases = require("./sql/tatilBudur.purchase.model.js")(sequelize, Sequelize);

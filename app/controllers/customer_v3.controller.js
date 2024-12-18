@@ -2,7 +2,7 @@ const db = require("../models");
 const CryptoJS = require("crypto-js");
 const axios = require('axios');
 const requestIp = require('request-ip');
-const Customer = db.customers;
+const Customer = db.customers_v3;
 const Mongoose = db.Mongoose;
 const sequelize = db.sequelize;
 const UserModel = db.userModel;
@@ -12,7 +12,7 @@ const ModelModel = db.modelModel;
 const redis = require('../config/redis');
 
 exports.create = async (req, res) => {
-  // upsertCustomer({ body: req.body })
+  upsertCustomer({ body: req.body })
   res.status(200).send({ result: "success" });
 }
 
@@ -48,8 +48,8 @@ const upsertCustomer = async ({ body }) => {
 
   if (redis) {
     const missingCustomerTables = await redis.smembers('missing_customer_tables');
-    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
-      console.log(`=================== Table missing for userID ${userID}`);
+    if (missingCustomerTables && missingCustomerTables.includes(userId)) {
+      console.log(`=================== Table missing for userID ${userId}`);
       return {
         message: "failure"
       }
@@ -64,13 +64,12 @@ const upsertCustomer = async ({ body }) => {
 
   // Save Customer in the database
   try {
-    await Customer.upsert(customer);
     return "success"
   } catch (error) {
-    
+
     if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
-      await redis.sadd('missing_customer_tables', userID);
-      console.log(`=================== Added userID ${userID} to missing_customer_tables set in Redis`);
+      await redis.sadd('missing_customer_tables', userId);
+      console.log(`=================== Added userID ${userId} to missing_customer_tables set in Redis`);
     }
     return error
   }
@@ -339,7 +338,9 @@ exports.update = async (req, res) => {
       visitorData: {
         visitorID: visitorID,
         purchase_propensity: resultObject.score,
-        audience_events: JSON.stringify(resultObject.audienceEvents.map(event => event.eventName.replace("enh_", ""))),
+        audience_events: JSON.stringify(resultObject.audienceEvents.map(event => {
+          return event.name.replace("enh_", "")
+        })),
       }
     })
 
@@ -358,21 +359,21 @@ const updateVisitorAfterScoring = async ({
   visitorData,
   userId
 }) => {
-
   Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userId;
   const transaction = await Customer.sequelize.transaction();
 
   try {
-
-    await Customer.update(visitorData, { transaction });
+    await Customer.update(visitorData, {
+      where: { visitorID: visitorData.visitorID },
+      transaction
+    });
+    
     await transaction.commit();
-
     return true;
   } catch (error) {
     await transaction.rollback();
-    return false
+    return false;
   }
-
 }
 
 function getQuery({
@@ -399,11 +400,11 @@ function getQuery({
 
 const scoreRandomForest = async ({ resultObject, customerData, updatedData, userId }) => {
 
-  console.log(">>>>>> will score customer")
-  console.log(customerData)
+  /* console.log(">>>>>> will score customer")
+  console.log(customerData) */
 
   try {
-    const scoreResult = await axios.post(`${process.env.PYTHON_AI_AUDIENCE_MODEL_URL || 'http://localhost:8002'}/score`, {
+    const scoreResult = await axios.post(`${process.env.PYTHON_AI_AUDIENCE_MODEL_URL || 'http://localhost:8000'}/score`, {
       visitor_id: customerData.VisitorID,
       customer_id: userId,
       features: customerData
