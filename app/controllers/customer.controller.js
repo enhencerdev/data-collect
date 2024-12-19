@@ -262,8 +262,12 @@ exports.update = async (req, res) => {
     } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring") {
       // if user status is not recurring
 
-      return res.status(404).send({
-        message: "Missing permissions."
+      return res.status(202).send({
+        message: "not_recurring",
+        anEnabled: user[0].crmDetails?.audienceNetworkSwitch,
+        isAnEnabled: user[0].crmDetails?.isAudienceNetworkEnabled,
+        enhencerCategories: user[0].enhencerCategories,
+        country: user[0].country
       });
 
     } else if (!user[0].token && !user[0].key) {

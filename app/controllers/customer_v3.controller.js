@@ -126,18 +126,18 @@ exports.update = async (req, res) => {
       //if user does not exist
 
       return res.status(404).send({
-        message: "No user or missing permissions."
+        message: "No user."
       });
-
-      return { message: "no user" };
 
     } else if (!user.crmDetails || !user.crmDetails.subscription || user.crmDetails.subscription.status !== "Recurring") {
       //if user status is not recurring
-      res.status(404).send({
-        message: "Missing permissions."
+      return res.status(202).send({
+        message: "not_recurring",
+        anEnabled: user.crmDetails.audienceNetworkSwitch,
+        isAnEnabled: user.crmDetails.isAudienceNetworkEnabled,
+        enhencerCategories: user.enhencerCategories,
+        country: user.country
       });
-
-      return { message: "missing permissions" };
 
     } else if (!user.token && !user.key) {
       //if user is found but token and key are not found - no model
