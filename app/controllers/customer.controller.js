@@ -105,8 +105,8 @@ const upsertCustomer = async ({ body }) => {
   // get the missing customer tables set from redis
 
   if (redis) {
-    const missingCustomerTables = await redis.smembers('missing_customer_tables');
-    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
+    const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
+    if (!isRecurringCustomer) {
       console.log(`=================== Table missing for userID ${userID}`);
       return {
         message: "failure"
@@ -123,16 +123,12 @@ const upsertCustomer = async ({ body }) => {
   // Save Customer in the database
   try {
     await Customer.upsert(customer);
+    await redis.sadd('recurring_customer_tables', userID);
     return {
       message: "success",
 
     }
   } catch (error) {
-
-    if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
-      await redis.sadd('missing_customer_tables', userID);
-      console.log(`=================== Added userID ${userID} to missing_customer_tables set in Redis`);
-    }
     return error
   }
 };
