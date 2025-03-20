@@ -9,20 +9,6 @@ const UserModel = db.userModel;
 const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
 
-const redis = require('../config/redis');
-
-exports.create = async (req, res) => {
-  try {
-    await upsertCustomer({ body: req.body });
-    res.status(200).send({ result: "success" });
-  } catch (error) {
-    res.status(500).send({
-      message: error.message || "Error occurred while creating customer"
-    });
-  }
-}
-
-
 const upsertCustomer = async ({ body }) => {
 
   const {
@@ -102,23 +88,11 @@ const upsertCustomer = async ({ body }) => {
     enhencer_audience_5,
   };
 
-  // get the missing customer tables set from redis
-
-  if (redis) {
-    const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
-    if (!isRecurringCustomer) {
-      console.log(`=================== Table missing for userID ${userID}`);
-      return {
-        message: "not_recurring"
-      }
-    }
-  }
-
   // Update customer data
   correctCustomerData(customer);
 
   // Set table name
-  Customer.tableName = "visitor_data_customer_" + userID;
+  Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userID;
 
   // Save Customer in the database
   try {
