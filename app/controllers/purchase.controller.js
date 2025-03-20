@@ -25,7 +25,7 @@ exports.create = async (req, res) => {
     const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
     if (!isRecurringCustomer) {
       return res.send({
-        message: "failure"
+        message: "not_recurring"
       });
     }
   }
