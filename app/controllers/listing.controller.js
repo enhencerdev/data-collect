@@ -9,9 +9,8 @@ exports.create = async (req, res) => {
   const { userID, visitorID, type, productCategory1, productCategory2, productCategory3 } = JSON.parse(req.body);
   
   if (redis) {
-    const missingCustomerTables = await redis.smembers('missing_customer_tables');
-    
-    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
+    const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
+    if (!isRecurringCustomer) {
       return res.send({
         message: "failure"
       });
