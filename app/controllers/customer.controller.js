@@ -123,7 +123,6 @@ const upsertCustomer = async ({ body }) => {
   // Save Customer in the database
   try {
     await Customer.upsert(customer);
-    await redis.sadd('recurring_customer_tables', userID);
     return {
       message: "success",
 
