@@ -9,9 +9,17 @@ const UserModel = db.userModel;
 const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
 
+const redis = require('../config/redis');
+
 exports.create = async (req, res) => {
-  upsertCustomer({ body: req.body })
-  res.status(200).send({ result: "success" });
+  try {
+    await upsertCustomer({ body: req.body });
+    res.status(200).send({ result: "success" });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || "Error occurred while creating customer"
+    });
+  }
 }
 
 
@@ -94,6 +102,18 @@ const upsertCustomer = async ({ body }) => {
     enhencer_audience_5,
   };
 
+  // get the missing customer tables set from redis
+
+  if (redis) {
+    const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
+    if (!isRecurringCustomer) {
+      console.log(`=================== Table missing for userID ${userID}`);
+      return {
+        message: "failure"
+      }
+    }
+  }
+
   // Update customer data
   correctCustomerData(customer);
 
@@ -102,10 +122,13 @@ const upsertCustomer = async ({ body }) => {
 
   // Save Customer in the database
   try {
-    const createdCustomer = await Customer.upsert(customer);
-    return "success"
+    await Customer.upsert(customer);
+    await redis.sadd('recurring_customer_tables', userID);
+    return {
+      message: "success",
+
+    }
   } catch (error) {
-    console.log(error);
     return error
   }
 };
@@ -227,24 +250,24 @@ exports.update = async (req, res) => {
     if (user.length === 0) {
       //if user does not exist
 
-      res.status(404).send({
+      return res.status(404).send({
         message: "No user or missing permissions."
       });
 
-      return { message: "no user" };
+    } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring") {
+      // if user status is not recurring
 
       return res.status(202).send({
         message: "not_recurring",
+        anEnabled: user[0].crmDetails?.audienceNetworkSwitch,
         isAnEnabled: user[0].crmDetails?.isAudienceNetworkEnabled,
         enhencerCategories: user[0].enhencerCategories,
         country: user[0].country
       });
 
-      return { message: "missing permissions" };
-
     } else if (!user[0].token && !user[0].key) {
-      console.log("------??????? 1 ", userID)
       //if user is found but token and key are not found - no model
+
       resultObject["Likely to buy"] = -1;
       resultObject["Likely to buy segment"] = -1;
 
@@ -263,10 +286,9 @@ exports.update = async (req, res) => {
         score: null,
         enh_conv_rem: 1,
       };
-      console.log("------??????? 2 ", userID)
     } else {
-      console.log("------??????? 3 ", userID)
       // has model
+
       if (user[0].facebookAds) {
         facebookAds = user[0].facebookAds;
       }
@@ -318,7 +340,10 @@ exports.update = async (req, res) => {
         },
         { $sort: { _id: -1 } }
       ]);
+
+      console.time("mongo modelsAggregation time")
       const models = await modelsAggregation.exec();
+      console.timeEnd("mongo modelsAggregation time")
       const model = models[0];
       const isAudienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled;
       resultObject = await createResultObject({
@@ -353,8 +378,7 @@ exports.update = async (req, res) => {
     }
 
   } catch (error) {
-    console.log("------??????? 9 ", userID, error)
-    res.status(500).send({
+    return res.status(500).send({
       message:
         error.message || "Some error occurred while creating the Customer.",
     });
@@ -364,7 +388,6 @@ exports.update = async (req, res) => {
 
   const transaction = await Customer.sequelize.transaction();
   try {
-    console.log("------??????? 10 ", userID)
     const selectedCustomer = await getById(visitorID);
     if (facebookAds.pixelId && facebookAds.accessToken) {
       await sendEventsToFacebookThroughConversionAPI({
@@ -374,22 +397,15 @@ exports.update = async (req, res) => {
         userId: userID
       });
     }
-    console.log("------??????? 11 ", userID)
     const { fbData, ...result } = resultObject;
     await selectedCustomer.update(updatedData, { transaction });
     await transaction.commit();
-    console.log("------??????? 22 ", userID)
-    res.status(202).send(JSON.stringify(result));
-    return result;
+    return res.status(202).send(JSON.stringify(result));
   } catch (error) {
-    console.log("------??????? 33 ", userID)
     await transaction.rollback();
-    console.log("------??????? 44 ", userID)
-    res.status(200).send({
-      message:
-        error.message || "Error occured while scoring",
+    return res.status(200).send({
+      message: error.message || "Error occured while scoring",
     });
-    return
   }
 
 };
@@ -587,7 +603,6 @@ function setEnhencerCampaignEvents(resultObject, customerData, updatedData, camp
           if (fbc) {
             eventData.user_data.fbc = fbc
           }
-  
           resultObject.fbData.push(eventData);
         } else {
           camp = {
@@ -711,17 +726,16 @@ async function sendEventsToFacebookThroughConversionAPI({
   fbData,
   userId
 }) {
-  console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
-  console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
+  // console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
+  // console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
 
   if (fbData && fbData.length > 0) {
-    console.log("inside")
     let url = `https://graph.facebook.com/v20.0/${pixelId}/events?access_token=${accessToken}`
     try {
       const fbResult = await axios.post(url, {
         data: fbData
       })
-      console.log("--------- result came for conversions api for user ", userId)
+      // console.log("--------- result came for conversions api for user ", userId)
       return;
     } catch (err) {
       console.log("catch fb conv api error for user ", userId, ": ", {
@@ -741,35 +755,25 @@ async function sendEventsToFacebookThroughConversionAPI({
 }
 
 function correctCustomerData(customerData) {
-  customerData["city"] =
-    customerData["city"] === undefined || customerData["city"] === "undefined"
-      ? ""
-      : customerData["city"];
-  customerData["country"] =
-    customerData["country"] === undefined ||
-      customerData["country"] === "undefined"
-      ? ""
-      : customerData["country"];
-  customerData["deviceType"] =
-    customerData["deviceType"] === undefined ||
-      customerData["deviceType"] === "undefined"
-      ? ""
-      : customerData["deviceType"];
+  // Set empty string for undefined fields
+  ['city', 'country', 'deviceType'].forEach(field => {
+    customerData[field] = customerData[field] === undefined || customerData[field] === "undefined" ? "" : customerData[field];
+  });
 
-  if (customerData["source"]) {
-    customerData["source"] = customerData["source"].substring(0, 120)
+  // Truncate source if exists
+  if (customerData.source) {
+    customerData.source = customerData.source.substring(0, 120);
   }
 
-  if (customerData["actionType"]) {
-    if (customerData["actionType"] === "product") {
-      customerData["product_viewer"] = 1;
-      customerData["last_product_view_time"] = new Date();
-    } else if (customerData["actionType"] === "basket") {
-      customerData["add_to_basket"] = 1;
-      customerData["last_add_to_basket_time"] = new Date();
-    } else if (customerData["actionType"] === "purchase") {
-      customerData["purchase_time"] = new Date();
-    }
+  // Set action type specific fields
+  const actionMap = {
+    'product': { product_viewer: 1, last_product_view_time: new Date() },
+    'basket': { add_to_basket: 1, last_add_to_basket_time: new Date() },
+    'purchase': { purchase_time: new Date() }
+  };
+
+  if (customerData.actionType && actionMap[customerData.actionType]) {
+    Object.assign(customerData, actionMap[customerData.actionType]);
   }
 }
 

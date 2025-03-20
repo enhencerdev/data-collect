@@ -43,6 +43,11 @@ exports.create = async (req, res) => {
     const cruiseBookingListing = JSON.parse(req.body);
     CruiseBooking.create(cruiseBookingListing);
   }
+  if(type === "cruise-booking") {
+    CruiseBooking.tableName = "VISITOR_DATA_LISTING_" + userID;
+    const cruiseBookingListing = JSON.parse(req.body);
+    CruiseBooking.create(cruiseBookingListing);
+  }
 
 
   customers.upsertCustomer({ body: req.body })

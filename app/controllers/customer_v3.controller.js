@@ -2,15 +2,17 @@ const db = require("../models");
 const CryptoJS = require("crypto-js");
 const axios = require('axios');
 const requestIp = require('request-ip');
-const Customer = db.customers;
+const Customer = db.customers_v3;
 const Mongoose = db.Mongoose;
 const sequelize = db.sequelize;
 const UserModel = db.userModel;
 const ProjectModel = db.projectModel;
 const ModelModel = db.modelModel;
 
+const redis = require('../config/redis');
+
 exports.create = async (req, res) => {
-  // upsertCustomer({ body: req.body })
+  upsertCustomer({ body: req.body })
   res.status(200).send({ result: "success" });
 }
 
@@ -43,6 +45,17 @@ const upsertCustomer = async ({ body }) => {
     purchase_propensity,
   };
 
+
+  if (redis) {
+    const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
+    if (!isRecurringCustomer) {
+      console.log(`=================== Table missing for userID ${userID}`);
+      return {
+        message: "failure"
+      }
+    }
+  }
+
   // Update customer data
   correctCustomerData(customer);
 
@@ -51,10 +64,9 @@ const upsertCustomer = async ({ body }) => {
 
   // Save Customer in the database
   try {
-    const createdCustomer = await Customer.upsert(customer);
+    await redis.sadd('recurring_customer_tables', userID);
     return "success"
   } catch (error) {
-    console.log(error);
     return error
   }
 };
@@ -108,11 +120,9 @@ exports.update = async (req, res) => {
     if (!user) {
       //if user does not exist
 
-      res.status(404).send({
-        message: "No user or missing permissions."
+      return res.status(404).send({
+        message: "No user."
       });
-
-      return { message: "no user" };
 
     } else if (!user.crmDetails || !user.crmDetails.subscription || user.crmDetails.subscription.status !== "Recurring") {
       //if user status is not recurring
@@ -122,8 +132,6 @@ exports.update = async (req, res) => {
         enhencerCategories: user.enhencerCategories,
         country: user.country
       });
-
-      return { message: "missing permissions" };
 
     } else if (!user.token && !user.key) {
       //if user is found but token and key are not found - no model
@@ -299,22 +307,22 @@ exports.update = async (req, res) => {
       });
     }
 
-    // res.send(JSON.stringify(resultObject));
-
     updateVisitorAfterScoring({
       userId,
       visitorData: {
         visitorID: visitorID,
         purchase_propensity: resultObject.score,
-        audience_events: JSON.stringify(resultObject.audienceEvents.map(event => event.eventName.replace("enh_", ""))),
+        audience_events: JSON.stringify(resultObject.audienceEvents.map(event => {
+          return event.name.replace("enh_", "")
+        })),
       }
     })
 
 
-    res.send(resultObject);
+    return res.send(resultObject);
 
   } catch (error) {
-    res.status(500).send({
+    return res.status(500).send({
       message:
         error.message || "Some error occurred while scoring the Customer.",
     });
@@ -325,21 +333,21 @@ const updateVisitorAfterScoring = async ({
   visitorData,
   userId
 }) => {
-
   Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userId;
   const transaction = await Customer.sequelize.transaction();
 
   try {
-
-    await Customer.update(visitorData, { transaction });
+    await Customer.update(visitorData, {
+      where: { visitorID: visitorData.visitorID },
+      transaction
+    });
+    
     await transaction.commit();
-
     return true;
   } catch (error) {
     await transaction.rollback();
-    return false
+    return false;
   }
-
 }
 
 function getQuery({
@@ -366,11 +374,11 @@ function getQuery({
 
 const scoreRandomForest = async ({ resultObject, customerData, updatedData, userId }) => {
 
-  console.log(">>>>>> will score customer")
-  console.log(customerData)
+  /* console.log(">>>>>> will score customer")
+  console.log(customerData) */
 
   try {
-    const scoreResult = await axios.post(`${process.env.PYTHON_AI_AUDIENCE_MODEL_URL || 'http://localhost:8002'}/score`, {
+    const scoreResult = await axios.post(`${process.env.PYTHON_AI_AUDIENCE_MODEL_URL || 'http://localhost:8000'}/score`, {
       visitor_id: customerData.VisitorID,
       customer_id: userId,
       features: customerData
