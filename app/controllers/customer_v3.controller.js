@@ -51,7 +51,7 @@ const upsertCustomer = async ({ body }) => {
     if (!isRecurringCustomer) {
       console.log(`=================== Table missing for userID ${userID}`);
       return {
-        message: "failure"
+        message: "not_recurring"
       }
     }
   }

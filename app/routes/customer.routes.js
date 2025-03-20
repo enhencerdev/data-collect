@@ -5,7 +5,6 @@ module.exports = app => {
     var router = require("express").Router();
   
     // Create a new Customer
-    router.post("/", customers.create);
     router.post("/v3", customers_v3.create);
     
   
