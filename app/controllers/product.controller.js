@@ -1,10 +1,8 @@
 const db = require("../models");
 const Product = db.products;
 const TatilBudur = db.tatilBudurProducts;
-const Mng = db.mngProducts;
-const Jolly = db.jollyProducts;
 const CruiseBooking = db.cruiseBookingProducts;
-
+const redis = require('../config/redis');
 const customers = require("../controllers/customer.controller.js");
 
 exports.create = async (req, res) => {
@@ -20,6 +18,15 @@ exports.create = async (req, res) => {
     userID,
     type,
   } = JSON.parse(req.body);
+
+  if (redis) {
+    const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
+    if (!isRecurringCustomer) {
+      return res.send({
+        message: "not_recurring"
+      });
+    }
+  }
 
   const product = {
     visitorID,
@@ -47,17 +54,11 @@ exports.create = async (req, res) => {
     TatilBudur.create(tatilbudurProduct);
   }
 
-  if (product.type === "mng") {
-    Mng.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
+  if (product.type === "cruise-booking") {
+    CruiseBooking.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
 
-    const mngProduct = JSON.parse(req.body);
-    Mng.create(mngProduct);
-  }
-  if (product.type === "jolly") {
-    Jolly.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
-
-    const jollyProduct = JSON.parse(req.body);
-    Jolly.create(jollyProduct);
+    const cruiseBookingProduct = JSON.parse(req.body);
+    CruiseBooking.create(cruiseBookingProduct);
   }
   if (product.type === "cruise-booking") {
     CruiseBooking.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;

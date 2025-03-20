@@ -1,23 +1,21 @@
 const db = require("../models");
 const Listing = db.listings;
 const TatilBudur = db.tatilBudurListings;
-const Mng = db.mngListings;
-const Jolly = db.jollyListings;
 const CruiseBooking = db.cruiseBookingListings;
-
+const redis = require('../config/redis');
 const customers = require("../controllers/customer.controller.js");
 
 exports.create = async (req, res) => {
-  // Validate request
-  /*if (!req.body.title) {
-    res.status(400).send({
-      message: "Content can not be empty!"
-    });
-    return;
-  }*/
-
-  // Create a Customer
   const { userID, visitorID, type, productCategory1, productCategory2, productCategory3 } = JSON.parse(req.body);
+  
+  if (redis) {
+    const isRecurringCustomer = await redis.sismember('recurring_customer_tables', userID);
+    if (!isRecurringCustomer) {
+      return res.send({
+        message: "not_recurring"
+      });
+    }
+  }
 
   const listing = {
     visitorID,
@@ -39,16 +37,10 @@ exports.create = async (req, res) => {
 
   }
 
-  if (type === "jolly") {
-    Jolly.tableName = "VISITOR_DATA_LISTING_" + userID;
-    const jollyListing = JSON.parse(req.body);
-    Jolly.create(jollyListing);
-  }
-
-  if (type === "mng") {
-    Mng.tableName = "VISITOR_DATA_LISTING_" + userID;
-    const mngListing = JSON.parse(req.body);
-    Mng.create(mngListing);
+  if(type === "cruise-booking") {
+    CruiseBooking.tableName = "VISITOR_DATA_LISTING_" + userID;
+    const cruiseBookingListing = JSON.parse(req.body);
+    CruiseBooking.create(cruiseBookingListing);
   }
   if(type === "cruise-booking") {
     CruiseBooking.tableName = "VISITOR_DATA_LISTING_" + userID;

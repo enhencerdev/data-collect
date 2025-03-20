@@ -12,22 +12,28 @@ const requestLogger = (req, res, next) => {
     console.log("")
     console.log("")
     console.log("================================================")
-    const body = JSON.parse(req.body)
-    console.log({
-        timestamp,
-        ip: clientIp,
-        method: req.method,
-        path: req.path,
-        userID: body?.userID || body?.userId,
-        userAgent: req.headers['user-agent']
-    });
 
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        console.log(`Finished! URL: ${req.originalUrl} - UserID: ${body?.userID || body?.userId} - Response Time: ${duration}ms`);
-    });
-
-    next();
+    try {
+        const body = JSON.parse(req.body)
+        console.log({
+            timestamp,
+            ip: clientIp,
+            method: req.method,
+            path: req.path,
+            userID: body?.userID || body?.userId,
+            userAgent: req.headers['user-agent']
+        });
+    
+        res.on('finish', () => {
+            const duration = Date.now() - start;
+            console.log(`Finished! URL: ${req.originalUrl} - UserID: ${body?.userID || body?.userId} - Response Time: ${duration}ms`);
+        });
+    
+        next();
+    } catch (error) {
+        next();
+    }
+   
 };
 
 module.exports = requestLogger;

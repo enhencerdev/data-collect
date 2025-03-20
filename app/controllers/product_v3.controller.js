@@ -1,8 +1,5 @@
 const db = require("../models");
 const Product = db.products;
-const TatilBudur = db.tatilBudurProducts;
-const Mng = db.mngProducts;
-const Jolly = db.jollyProducts;
 
 const customers = require("../controllers/customer_v3.controller.js");
 
