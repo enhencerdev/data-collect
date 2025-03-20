@@ -52,12 +52,9 @@ db.purchases = require("./sql/purchase.model.js")(sequelize, Sequelize);
 db.tatilBudurListings = require("./sql/tatilBudur.listing.model.js")(sequelize, Sequelize);
 db.tatilBudurProducts = require("./sql/tatilBudur.product.model.js")(sequelize, Sequelize);
 db.tatilBudurPurchases = require("./sql/tatilBudur.purchase.model.js")(sequelize, Sequelize);
-db.jollyListings = require("./sql/jolly.listing.model.js")(sequelize, Sequelize);
-db.jollyProducts = require("./sql/jolly.product.model.js")(sequelize, Sequelize);
-db.jollyPurchases = require("./sql/jolly.purchase.model.js")(sequelize, Sequelize);
-db.mngListings = require("./sql/mng.listing.model.js")(sequelize, Sequelize);
-db.mngProducts = require("./sql/mng.product.model.js")(sequelize, Sequelize);
-db.mngPurchases = require("./sql/mng.purchase.model.js")(sequelize, Sequelize);
+db.cruiseBookingListings = require("./sql/cruiseBooking.listing.model.js")(sequelize, Sequelize);
+db.cruiseBookingProducts = require("./sql/cruiseBooking.product.model.js")(sequelize, Sequelize);
+db.cruiseBookingPurchases = require("./sql/cruiseBooking.purchase.model.js")(sequelize, Sequelize);
 
 db.mongoose = mongoose;
 db.Mongoose = Mongoose;

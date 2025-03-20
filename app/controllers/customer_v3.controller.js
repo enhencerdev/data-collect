@@ -85,7 +85,6 @@ exports.update = async (req, res) => {
         country: 1,
         'crmDetails.country': 1,
         'crmDetails.subscription': 1,
-        'crmDetails.audienceNetworkSwitch': 1,
         'crmDetails.isAudienceNetworkEnabled': 1,
         'enhencerCategories': 1,
         'googleAds.conversionId': 1,
@@ -117,36 +116,24 @@ exports.update = async (req, res) => {
 
     } else if (!user.crmDetails || !user.crmDetails.subscription || user.crmDetails.subscription.status !== "Recurring") {
       //if user status is not recurring
-      res.status(404).send({
-        message: "Missing permissions."
+      return res.status(202).send({
+        message: "not_recurring",
+        isAnEnabled: user.crmDetails.isAudienceNetworkEnabled,
+        enhencerCategories: user.enhencerCategories,
+        country: user.country
       });
 
       return { message: "missing permissions" };
 
     } else if (!user.token && !user.key) {
       //if user is found but token and key are not found - no model
-
-
-
-
       resultObject["Likely to buy"] = -1;
       resultObject["Likely to buy segment"] = -1;
-
-      resultObject["anEnabled"] = !!user.crmDetails && user.crmDetails.audienceNetworkSwitch
       resultObject["isAnEnabled"] = !!user.crmDetails && user.crmDetails.isAudienceNetworkEnabled
 
       let uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
       let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
 
-      resultObject["audiences"] = [
-        {
-          name: "Enhencer Audience 1",
-          adPlatform: "Facebook",
-          eventId: eventId,
-        },
-      ];
-      uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
-      eventId = "eid." + uniqId.substring(5) + "." + visitorID;
       resultObject["campaigns"] = [
         {
           name: "enh_conv_rem",
@@ -170,12 +157,7 @@ exports.update = async (req, res) => {
       if (user.enhencerCategories) {
         enhencerCategories = user.enhencerCategories;
       }
-      /* const token = user.token;
-      const key = user.key;
-      const bytes = CryptoJS.AES.decrypt(token, key);
-      const idsJSON = JSON.parse(bytes.toString(CryptoJS.enc.Utf8)); */
-
-
+      
       const project = await ProjectModel.findOne({
         userId: new Mongoose.Types.ObjectId(userId)
       },

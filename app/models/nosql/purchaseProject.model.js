@@ -9,7 +9,6 @@ let Project = new mongoose.Schema({
   connectQuery: String,
   questionList: Array,
   idQuestionList: Array,
-  audiences: [Audience],
   isDemo: Boolean,
   isReady: Boolean
 });

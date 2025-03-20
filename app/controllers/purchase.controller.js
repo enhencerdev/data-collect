@@ -1,19 +1,12 @@
 const db = require("../models");
 const Purchase = db.purchases;
 const TatilBudur = db.tatilBudurPurchases;
-const Mng = db.mngPurchases;
-const Jolly = db.jollyPurchases;
-
+const CruiseBooking = db.cruiseBookingPurchases;
+const redis = require('../config/redis');
 const customers = require("../controllers/customer.controller.js");
 
 exports.create = async (req, res) => {
-  // Validate request
-  /*if (!req.body.title) {
-    res.status(400).send({
-      message: "Content can not be empty!"
-    });
-    return;
-  }*/
+
 
   const {
     visitorID,
@@ -27,6 +20,16 @@ exports.create = async (req, res) => {
     userID,
     products,
   } = JSON.parse(req.body);
+
+  if (redis) {
+    const missingCustomerTables = await redis.smembers('missing_customer_tables');
+    
+    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
+      return res.send({
+        message: "failure"
+      });
+    }
+  }
 
   const purchase = {
     visitorID,
@@ -53,22 +56,13 @@ exports.create = async (req, res) => {
     tatilbudurPurchase['type'] = tatilbudurPurchase['actionName'] === undefined ? "" : tatilbudurPurchase['actionName'];
     TatilBudur.create(tatilbudurPurchase);
   }
-  else if (purchase.type === "mng") {
-    Mng.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
+  else if (purchase.type === "cruise-booking") {
+    CruiseBooking.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
 
-    const mngPurchase = JSON.parse(req.body);
-    mngPurchase['dateTime'] = new Date();
-    mngPurchase['type'] = mngPurchase['actionName'] === undefined ? "" : mngPurchase['actionName'];
-    Mng.create(mngPurchase);
-
-  }
-  else if (purchase.type === "jolly") {
-    Jolly.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
-
-    const jollyPurchase = JSON.parse(req.body);
-    jollyPurchase['dateTime'] = new Date();
-    jollyPurchase['type'] = jollyPurchase['actionName'] === undefined ? "" : jollyPurchase['actionName'];
-    Jolly.create(jollyPurchase);
+    const cruiseBookingPurchase = JSON.parse(req.body);
+    cruiseBookingPurchase['dateTime'] = new Date();
+    cruiseBookingPurchase['type'] = cruiseBookingPurchase['actionName'] === undefined ? "" : cruiseBookingPurchase['actionName'];
+    CruiseBooking.create(cruiseBookingPurchase);
   }
   else {
     console.log("Error: type required")
