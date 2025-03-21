@@ -23,7 +23,7 @@ const requestLogger = (req, res, next) => {
 
     res.on('finish', () => {
         const duration = Date.now() - start;
-        console.log(`Finished! URL: ${req.originalUrl} - UserID: ${body?.userID || body?.userId} - Response Time: ${duration}ms`);
+        console.log(`Finished! URL: ${req.originalUrl} - UserID: ${req.body?.userID || req.body?.userId} - Response Time: ${duration}ms`);
     });
 
     next();
