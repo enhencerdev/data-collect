@@ -12,20 +12,14 @@ const requestLogger = (req, res, next) => {
     console.log("")
     console.log("")
     console.log("================================================")
-    if (req.body) {
-        const body = JSON.parse(req.body)
-        console.log({
-            timestamp,
-            ip: clientIp,
-            method: req.method,
-            path: req.path,
-            userID: body?.userID || body?.userId,
-            userAgent: req.headers['user-agent']
-        });
-    } else {
-        console.log("No body")
-
-    }
+    console.log({
+        timestamp,
+        ip: clientIp,
+        method: req.method,
+        path: req.path,
+        body: req.body,
+        userAgent: req.headers['user-agent']
+    });
 
     res.on('finish', () => {
         const duration = Date.now() - start;
