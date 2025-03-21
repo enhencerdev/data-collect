@@ -59,4 +59,4 @@ jobs:
           app-name: 'enhencerdatacollect'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7E2DCAED6BB74A0684000CB9B05E1C8F }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
