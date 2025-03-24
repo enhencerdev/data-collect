@@ -107,7 +107,6 @@ const upsertCustomer = async ({ body }) => {
   if (redis) {
     const missingCustomerTables = await redis.smembers('missing_customer_tables');
     if (missingCustomerTables && missingCustomerTables.includes(userID)) {
-      console.log(`=================== Table missing for userID ${userID}`);
       return {
         message: "failure"
       }
@@ -131,7 +130,6 @@ const upsertCustomer = async ({ body }) => {
 
     if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
       await redis.sadd('missing_customer_tables', userID);
-      console.log(`=================== Added userID ${userID} to missing_customer_tables set in Redis`);
     }
     return error
   }
@@ -226,7 +224,6 @@ exports.update = async (req, res) => {
   let enhencerCategories;
 
 
-  console.log("start ", userID)
   try {
     const userAggregation = UserModel.aggregate([
       //This pipeline aims to retrieve user data matching userID
@@ -729,8 +726,6 @@ async function sendEventsToFacebookThroughConversionAPI({
   fbData,
   userId
 }) {
-  // console.log("sendEventsToFacebookThroughConversionAPI for userId", fbData)
-  // console.log("pixel id: ", pixelId, ", accessToken: ", accessToken)
 
   if (fbData && fbData.length > 0) {
     let url = `https://graph.facebook.com/v20.0/${pixelId}/events?access_token=${accessToken}`
@@ -738,7 +733,6 @@ async function sendEventsToFacebookThroughConversionAPI({
       const fbResult = await axios.post(url, {
         data: fbData
       })
-      // console.log("--------- result came for conversions api for user ", userId)
       return;
     } catch (err) {
       console.log("catch fb conv api error for user ", userId, ": ", {

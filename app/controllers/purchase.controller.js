@@ -74,8 +74,6 @@ exports.create = async (req, res) => {
 
 
 const upsertPurchase = async ({ actionType, purchase, visitorID, userID, productID }) => {
-  console.log("yayayaya")
-  console.log({ actionType, purchase, visitorID, userID, productID })
 
   let newProduct = {
     visitorID: visitorID,
@@ -91,9 +89,7 @@ const upsertPurchase = async ({ actionType, purchase, visitorID, userID, product
     try {
       if (products) {
         for (const product of products) {
-          console.log("before ", product)
           correctProductDetails(product, newProduct)
-          console.log("after ", newProduct)
           await Purchase.upsert(newProduct);
         }
         return "success"

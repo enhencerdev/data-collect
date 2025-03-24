@@ -49,7 +49,6 @@ const upsertCustomer = async ({ body }) => {
   if (redis) {
     const missingCustomerTables = await redis.smembers('missing_customer_tables');
     if (missingCustomerTables && missingCustomerTables.includes(userId)) {
-      console.log(`=================== Table missing for userID ${userId}`);
       return {
         message: "failure"
       }
@@ -69,7 +68,6 @@ const upsertCustomer = async ({ body }) => {
 
     if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
       await redis.sadd('missing_customer_tables', userId);
-      console.log(`=================== Added userID ${userId} to missing_customer_tables set in Redis`);
     }
     return error
   }
@@ -93,7 +91,6 @@ exports.update = async (req, res) => {
   let enhencerCategories;
 
 
-  console.log("start ", userId)
   try {
     const user = await UserModel.findOne(
       { _id: new Mongoose.Types.ObjectId(userId) },
