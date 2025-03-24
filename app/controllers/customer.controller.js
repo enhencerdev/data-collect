@@ -138,6 +138,7 @@ const upsertCustomer = async ({ body }) => {
 // Update a Customer by the id in the request
 exports.update = async (req, res) => {
   const ipAddress = requestIp.getClientIp(req);
+  console.log("req body to string:::::: ", req.body.substring(0, 30))
   const {
     visitorID = req.params.id,
     customerID,
