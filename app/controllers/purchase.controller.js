@@ -6,70 +6,77 @@ const redis = require('../config/redis');
 const customers = require("../controllers/customer.controller.js");
 
 exports.create = async (req, res) => {
+  try {
+    const data = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const {
+      visitorID,
+      dateTime,
+      basketID,
+      productID,
+      amount,
+      price,
+      type,
+      actionType,
+      userID,
+      products,
+    } = data;
 
-
-  const {
-    visitorID,
-    dateTime,
-    basketID,
-    productID,
-    amount,
-    price,
-    type,
-    actionType,
-    userID,
-    products,
-  } = JSON.parse(req.body);
-
-  if (redis) {
-    const missingCustomerTables = await redis.smembers('missing_customer_tables');
-    
-    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
-      return res.send({
-        message: "failure"
-      });
+    if (redis) {
+      const missingCustomerTables = await redis.smembers('missing_customer_tables');
+      
+      if (missingCustomerTables && missingCustomerTables.includes(userID)) {
+        return res.send({
+          message: "failure"
+        });
+      }
     }
-  }
 
-  const purchase = {
-    visitorID,
-    dateTime,
-    basketID,
-    productID,
-    amount,
-    price,
-    type,
-    actionType,
-    userID,
-    products,
-  };
+    const purchase = {
+      visitorID,
+      dateTime,
+      basketID,
+      productID,
+      amount,
+      price,
+      type,
+      actionType,
+      userID,
+      products,
+    };
 
-  // Save Listing in the database
-  if (purchase.type === "ecommerce") {
-    upsertPurchase({ actionType, purchase, visitorID, userID, productID })
-  }
-  else if (purchase.type === "tatil-budur") {
-    TatilBudur.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
+    // Save Listing in the database
+    if (purchase.type === "ecommerce") {
+      upsertPurchase({ actionType, purchase, visitorID, userID, productID })
+    }
+    else if (purchase.type === "tatil-budur") {
+      TatilBudur.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
 
-    const tatilbudurPurchase = JSON.parse(req.body);
-    tatilbudurPurchase['dateTime'] = new Date();
-    tatilbudurPurchase['type'] = tatilbudurPurchase['actionName'] === undefined ? "" : tatilbudurPurchase['actionName'];
-    TatilBudur.create(tatilbudurPurchase);
-  }
-  else if (purchase.type === "cruise-booking") {
-    CruiseBooking.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
+      const tatilbudurPurchase = JSON.parse(req.body);
+      tatilbudurPurchase['dateTime'] = new Date();
+      tatilbudurPurchase['type'] = tatilbudurPurchase['actionName'] === undefined ? "" : tatilbudurPurchase['actionName'];
+      TatilBudur.create(tatilbudurPurchase);
+    }
+    else if (purchase.type === "cruise-booking") {
+      CruiseBooking.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
 
-    const cruiseBookingPurchase = JSON.parse(req.body);
-    cruiseBookingPurchase['dateTime'] = new Date();
-    cruiseBookingPurchase['type'] = cruiseBookingPurchase['actionName'] === undefined ? "" : cruiseBookingPurchase['actionName'];
-    CruiseBooking.create(cruiseBookingPurchase);
-  }
-  else {
-    console.log("Error: type required")
-  }
+      const cruiseBookingPurchase = JSON.parse(req.body);
+      cruiseBookingPurchase['dateTime'] = new Date();
+      cruiseBookingPurchase['type'] = cruiseBookingPurchase['actionName'] === undefined ? "" : cruiseBookingPurchase['actionName'];
+      CruiseBooking.create(cruiseBookingPurchase);
+    }
+    else {
+      console.log("Error: type required")
+    }
 
-  customers.upsertCustomer({ body: req.body })
-  res.status(200).send({ result: "success" });
+    customers.upsertCustomer({ body: req.body })
+    res.status(200).send({ result: "success" });
+  } catch (error) {
+    console.error('Purchase creation error:', error);
+    return res.status(400).send({
+      message: "Invalid request format",
+      error: error.message
+    });
+  }
 };
 
 

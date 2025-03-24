@@ -4,40 +4,44 @@ const Product = db.products;
 const customers = require("../controllers/customer_v3.controller.js");
 
 exports.create = async (req, res) => {
+  try {
+    const {
+      visitorID,
+      productID,
+      productCategory1,
+      productCategory2,
+      productCategory3,
+      price,
+      userId,
+      type,
+    } = req.body;
 
-  // Create a Product
-  const {
-    visitorID,
-    productID,
-    productCategory1,
-    productCategory2,
-    productCategory3,
-    price,
-    userId,
-    type,
-  } = JSON.parse(req.body);
+    const product = {
+      visitorID,
+      productID,
+      productCategory1,
+      productCategory2,
+      productCategory3,
+      price,
+      userId,
+      type,
+    };
 
-  const product = {
-    visitorID,
-    productID,
-    productCategory1,
-    productCategory2,
-    productCategory3,
-    price,
-    userId,
-    type,
-  };
+    correctProductData(product, product.type);
 
-  correctProductData(product, product.type);
+    if (type === "ecommerce") {
+      await upsertProduct(product);
+    }
 
-
-  // Save Product in the database
-  if (type === "ecommerce") {
-    upsertProduct(product)
+    await customers.upsertCustomer({ body: req.body });
+    return res.status(200).send({ result: "success" });
+  } catch (error) {
+    console.error('Product v3 creation error:', error);
+    return res.status(500).send({
+      message: "Error processing request",
+      error: error.message
+    });
   }
-
-  customers.upsertCustomer({ body: req.body })
-  res.status(200).send({ result: "success" });
 };
 
 const upsertProduct = async (product) => {

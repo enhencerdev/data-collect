@@ -6,47 +6,44 @@ const redis = require('../config/redis');
 const customers = require("../controllers/customer.controller.js");
 
 exports.create = async (req, res) => {
-  const { userID, visitorID, type, productCategory1, productCategory2, productCategory3 } = JSON.parse(req.body);
-  
-  if (redis) {
-    const missingCustomerTables = await redis.smembers('missing_customer_tables');
+  try {
+    const { userID, visitorID, type, productCategory1, productCategory2, productCategory3 } = req.body;
     
-    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
-      return res.send({
-        message: "failure"
-      });
+    if (redis) {
+      const missingCustomerTables = await redis.smembers('missing_customer_tables');
+      if (missingCustomerTables && missingCustomerTables.includes(userID)) {
+        return res.send({ message: "failure" });
+      }
     }
+
+    const listing = {
+      visitorID,
+      productCategory1,
+      productCategory2,
+      productCategory3,
+    };
+
+    correctListingData(listing, type);
+
+    if (type === "ecommerce") {
+      await upsertListing(listing, userID);
+    } else if (type === "tatil-budur") {
+      TatilBudur.tableName = "VISITOR_DATA_LISTING_" + userID;
+      await TatilBudur.create(req.body);
+    } else if (type === "cruise-booking") {
+      CruiseBooking.tableName = "VISITOR_DATA_LISTING_" + userID;
+      await CruiseBooking.create(req.body);
+    }
+
+    await customers.upsertCustomer({ body: req.body });
+    return res.status(200).send({ result: "success" });
+  } catch (error) {
+    console.error('Listing creation error:', error);
+    return res.status(500).send({
+      message: "Error processing request",
+      error: error.message
+    });
   }
-
-  const listing = {
-    visitorID,
-    productCategory1,
-    productCategory2,
-    productCategory3,
-  };
-
-  correctListingData(listing, type);
-  // Save Listing in the database
-  if (type === "ecommerce") {
-    upsertListing(listing, userID)
-  }
-
-  if (type === "tatil-budur") {
-    TatilBudur.tableName = "VISITOR_DATA_LISTING_" + userID;
-    const tatilbudurListing = JSON.parse(req.body);
-    TatilBudur.create(tatilbudurListing);
-
-  }
-
-  if(type === "cruise-booking") {
-    CruiseBooking.tableName = "VISITOR_DATA_LISTING_" + userID;
-    const cruiseBookingListing = JSON.parse(req.body);
-    CruiseBooking.create(cruiseBookingListing);
-  }
-
-
-  customers.upsertCustomer({ body: req.body })
-  res.status(200).send({ result: "success" });
 };
 
 

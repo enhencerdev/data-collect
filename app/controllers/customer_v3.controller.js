@@ -12,64 +12,68 @@ const ModelModel = db.modelModel;
 const redis = require('../config/redis');
 
 exports.create = async (req, res) => {
-  upsertCustomer({ body: req.body })
-  res.status(200).send({ result: "success" });
-}
-
+  try {
+    await upsertCustomer({ body: req.body });
+    return res.status(200).send({ result: "success" });
+  } catch (error) {
+    console.error('Customer v3 creation error:', error);
+    return res.status(500).send({
+      message: "Error processing request",
+      error: error.message
+    });
+  }
+};
 
 const upsertCustomer = async ({ body }) => {
+  try {
+    const {
+      userId,
+      visitorID,
+      customerID,
+      deviceType,
+      scrollPercentage,
+      searched,
+      sessionDuration,
+      actionType,
+      source,
+      purchase_propensity,
+    } = body;
 
-  const {
-    userId,
-    visitorID,
-    customerID,
-    deviceType,
-    scrollPercentage,
-    searched,
-    sessionDuration,
-    actionType,
-    source,
-    purchase_propensity,
-  } = JSON.parse(body);
+    const customer = {
+      userId,
+      visitorID,
+      customerID,
+      deviceType,
+      scrollPercentage,
+      searched,
+      sessionDuration,
+      actionType,
+      source,
+      purchase_propensity,
+    };
 
-  const customer = {
-    userId,
-    visitorID,
-    customerID,
-    deviceType,
-    scrollPercentage,
-    searched,
-    sessionDuration,
-    actionType,
-    source,
-    purchase_propensity,
-  };
-
-
-  if (redis) {
-    const missingCustomerTables = await redis.smembers('missing_customer_tables');
-    if (missingCustomerTables && missingCustomerTables.includes(userId)) {
-      return {
-        message: "failure"
+    if (redis) {
+      const missingCustomerTables = await redis.smembers('missing_customer_tables');
+      if (missingCustomerTables && missingCustomerTables.includes(userId)) {
+        return { message: "failure" };
       }
     }
-  }
 
-  // Update customer data
-  correctCustomerData(customer);
+    correctCustomerData(customer);
+    Customer.tableName = "visitor_data_customer_" + userId;
 
-  // Set table name
-  Customer.tableName = "visitor_data_customer_" + userId;
-
-  // Save Customer in the database
-  try {
-    return "success"
-  } catch (error) {
-
-    if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
-      await redis.sadd('missing_customer_tables', userId);
+    try {
+      await Customer.upsert(customer);
+      return "success";
+    } catch (error) {
+      if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
+        await redis.sadd('missing_customer_tables', userId);
+      }
+      throw error;
     }
-    return error
+  } catch (error) {
+    console.error('Customer v3 upsert error:', error);
+    throw error;
   }
 };
 

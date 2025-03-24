@@ -5,6 +5,7 @@ const compression = require('compression');
 const methodOverride = require('method-override');
 const limiter = require('./app/util/rate-limiter');
 const requestLogger = require('./app/util/request-logger');
+const jsonValidator = require("./app/middleware/json-validator");
 
 const app = express();
 
@@ -13,9 +14,10 @@ const app = express();
 }; */
 
 // First, set up parsing
-app.use(express.json());
-app.use(express.text());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.text({ 
+  type: ['text/plain', 'application/json'],  // Accept both content types
+  limit: '1mb'
+}));
 
 // Then compression and other middleware
 app.use(compression());
@@ -27,6 +29,9 @@ app.use(cors());
 
 // Then your request logger
 app.use(requestLogger);
+
+// Apply JSON validator to all API routes
+app.use('/api', jsonValidator);
 
 const db = require("./app/models");
 

@@ -24,7 +24,8 @@ const requestLogger = (req, res, next) => {
     res.on('finish', () => {
         const duration = Date.now() - start;
         if (duration > 2000) {
-            const userId = JSON.parse(req.body)?.userID || JSON.parse(req.body)?.userId;
+            // Body is already parsed by middleware
+            const userId = req.body?.userID || req.body?.userId;
             console.log(`More than 2 seconds! URL: ${req.originalUrl} - UserID: ${userId} - Response Time: ${duration}ms`);
         }
     });

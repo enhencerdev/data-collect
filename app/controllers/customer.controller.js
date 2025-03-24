@@ -22,393 +22,272 @@ exports.create = async (req, res) => {
   }
 }
 
-
 const upsertCustomer = async ({ body }) => {
+  try {
+    const {
+      visitorID,
+      customerID,
+      city,
+      country,
+      deviceType,
+      actionType,
+      add_to_basket,
+      last_add_to_basket_time,
+      product_viewer,
+      last_product_view_time,
+      purchase_time,
+      source,
+      purchase_propensity,
+      segment,
+      expected_revenue,
+      revenue_segment,
+      score,
+      enhencer_audience,
+      userID, // or userId depending on your convention
+    } = body;
 
-  const {
-    userID,
-    visitorID,
-    customerID,
-    city,
-    country,
-    deviceType,
-    actionType,
-    add_to_basket,
-    last_add_to_basket_time,
-    product_viewer,
-    last_product_view_time,
-    purchase_time,
-    source,
-    purchase_propensity,
-    segment,
-    expected_revenue,
-    revenue_segment,
-    score,
-    enhencer_audience,
-    b_audience,
-    enh_conv_rem,
-    enh_dpa_rem,
-    enh_gdn_rem,
-    enh_conv_high_intent_rem,
-    enh_dpa_high_intent_rem,
-    enh_perf_max_rem,
-    enh_search_rem,
-    enh_rlsa_rem,
-    enh_conv_lal,
-    enh_dpa_lal,
-    enh_traffic_lal,
-    enhencer_audience_1,
-    enhencer_audience_2,
-    enhencer_audience_3,
-    enhencer_audience_4,
-    enhencer_audience_5,
-  } = JSON.parse(body);
-
-  const customer = {
-    visitorID,
-    customerID,
-    city,
-    country,
-    deviceType,
-    actionType,
-    add_to_basket,
-    last_add_to_basket_time,
-    product_viewer,
-    last_product_view_time,
-    purchase_time,
-    source,
-    purchase_propensity,
-    segment,
-    expected_revenue,
-    revenue_segment,
-    score,
-    enhencer_audience,
-    b_audience,
-    enh_conv_rem,
-    enh_dpa_rem,
-    enh_gdn_rem,
-    enh_conv_high_intent_rem,
-    enh_dpa_high_intent_rem,
-    enh_perf_max_rem,
-    enh_search_rem,
-    enh_rlsa_rem,
-    enh_conv_lal,
-    enh_dpa_lal,
-    enh_traffic_lal,
-    enhencer_audience_1,
-    enhencer_audience_2,
-    enhencer_audience_3,
-    enhencer_audience_4,
-    enhencer_audience_5,
-  };
-
-  // get the missing customer tables set from redis
-
-  if (redis) {
-    const missingCustomerTables = await redis.smembers('missing_customer_tables');
-    if (missingCustomerTables && missingCustomerTables.includes(userID)) {
-      return {
-        message: "failure"
+    if (redis) {
+      const missingCustomerTables = await redis.smembers('missing_customer_tables');
+      if (missingCustomerTables && missingCustomerTables.includes(userID)) {
+        return { message: "failure" };
       }
     }
-  }
 
-  // Update customer data
-  correctCustomerData(customer);
+    const customer = {
+      visitorID,
+      customerID,
+      city,
+      country,
+      deviceType,
+      actionType,
+      add_to_basket,
+      last_add_to_basket_time,
+      product_viewer,
+      last_product_view_time,
+      purchase_time,
+      source,
+      purchase_propensity,
+      segment,
+      expected_revenue,
+      revenue_segment,
+      score,
+      enhencer_audience,
+    };
 
-  // Set table name
-  Customer.tableName = "visitor_data_customer_" + userID;
+    correctCustomerData(customer);
+    Customer.tableName = "visitor_data_customer_" + userID;
 
-  // Save Customer in the database
-  try {
-    await Customer.upsert(customer);
-    return {
-      message: "success",
-
+    try {
+      await Customer.upsert(customer);
+      return { message: "success" };
+    } catch (error) {
+      if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
+        await redis.sadd('missing_customer_tables', userID);
+      }
+      throw error;
     }
   } catch (error) {
-
-    if (redis && error.name === 'SequelizeDatabaseError' && error.parent?.code === 'ER_NO_SUCH_TABLE') {
-      await redis.sadd('missing_customer_tables', userID);
-    }
-    return error
+    console.error('Customer upsert error:', error);
+    return error;
   }
 };
 
 // Update a Customer by the id in the request
 exports.update = async (req, res) => {
-  const ipAddress = requestIp.getClientIp(req);
-  console.log("req body to string:::::: ", req.body.substring(0, 30))
-  const {
-    visitorID = req.params.id,
-    customerID,
-    userID,
-    city,
-    country,
-    deviceType,
-    add_to_basket,
-    last_add_to_basket_time,
-    product_viewer,
-    last_product_view_time,
-    purchase_time,
-    source,
-    fbp,
-    fbc,
-    userAgent,
-    eventSourceUrl,
-    purchase_propensity,
-    segment,
-    expected_revenue,
-    revenue_segment,
-    score,
-    enhencer_audience,
-    b_audience,
-    enh_conv_rem,
-    enh_dpa_rem,
-    enh_gdn_rem,
-    enh_conv_high_intent_rem,
-    enh_dpa_high_intent_rem,
-    enh_perf_max_rem,
-    enh_search_rem,
-    enh_rlsa_rem,
-    enh_conv_lal,
-    enh_dpa_lal,
-    enh_traffic_lal,
-    enhencer_audience_1,
-    enhencer_audience_2,
-    enhencer_audience_3,
-    enhencer_audience_4,
-    enhencer_audience_5,
-  } = JSON.parse(req.body);
-
-  const customer = {
-    visitorID,
-    customerID,
-    userID,
-    city,
-    country,
-    deviceType,
-    add_to_basket,
-    last_add_to_basket_time,
-    product_viewer,
-    last_product_view_time,
-    purchase_time,
-    source,
-    purchase_propensity,
-    segment,
-    expected_revenue,
-    revenue_segment,
-    score,
-    enhencer_audience,
-    b_audience,
-    enh_conv_rem,
-    enh_dpa_rem,
-    enh_gdn_rem,
-    enh_conv_high_intent_rem,
-    enh_dpa_high_intent_rem,
-    enh_perf_max_rem,
-    enh_search_rem,
-    enh_rlsa_rem,
-    enh_conv_lal,
-    enh_dpa_lal,
-    enh_traffic_lal,
-    enhencer_audience_1,
-    enhencer_audience_2,
-    enhencer_audience_3,
-    enhencer_audience_4,
-    enhencer_audience_5,
-  };
-
-  let updatedData = {};
-  let resultObject = {};
-  let facebookAds = {};
-  let enhencerCategories;
-
-
   try {
-    const userAggregation = UserModel.aggregate([
-      //This pipeline aims to retrieve user data matching userID
-      { $match: { _id: new Mongoose.Types.ObjectId(userID) } },
-      {
-        $project: {
-          token: 1,
-          key: 1,
-          percentage: 1,
-          thresholds: 1,
-          country: 1,
-          'crmDetails.country': 1,
-          'crmDetails.subscription': 1,
-          'crmDetails.isAudienceNetworkEnabled': 1,
-          'enhencerCategories': 1,
-          'googleAds.conversionId': 1,
-          'facebookAds': 1,
-          'tiktokAds': 1
-        },
-      },
-    ]);
+    const ipAddress = requestIp.getClientIp(req);
+    const {
+      visitorID = req.params.id,
+      userID,
+      fbp,
+      fbc,
+      userAgent,
+      eventSourceUrl,
+    } = req.body;
 
-    const user = await userAggregation.exec(); //get user data
+    let updatedData = {};
+    let resultObject = {};
+    let facebookAds = {};
+    let enhencerCategories;
 
-    if (user.length === 0) {
-      //if user does not exist
-
-      return res.status(404).send({
-        message: "No user or missing permissions."
-      });
-
-    } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring") {
-      // if user status is not recurring
-
-      return res.status(202).send({
-        message: "not_recurring",
-        isAnEnabled: user[0].crmDetails?.isAudienceNetworkEnabled,
-        enhencerCategories: user[0].enhencerCategories,
-        country: user[0].country
-      });
-
-    } else if (!user[0].token && !user[0].key) {
-      //if user is found but token and key are not found - no model
-
-      resultObject["Likely to buy"] = -1;
-      resultObject["Likely to buy segment"] = -1;
-
-      resultObject["isAnEnabled"] = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled
-      let uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
-      let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
-
-      resultObject["campaigns"] = [
-        {
-          name: "enh_conv_rem",
-          adPlatform: "Facebook",
-          eventId: eventId,
-        },
-      ];
-      updatedData = {
-        score: null,
-        enh_conv_rem: 1,
-      };
-    } else {
-      // has model
-
-      if (user[0].facebookAds) {
-        facebookAds = user[0].facebookAds;
-      }
-      if (user[0].enhencerCategories) {
-        enhencerCategories = user[0].enhencerCategories;
-      }
-      const token = user[0].token;
-      const key = user[0].key;
-      const bytes = CryptoJS.AES.decrypt(token, key);
-      const idsJSON = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-      let projectId = idsJSON.projectId;
-
-      const matchQuery = {
-        _id: new Mongoose.Types.ObjectId(projectId)
-      };
-      const projectQuery = {
-        connectQuery: 1,
-        campaigns: 1,
-      };
-      const aggregateQuery = [{ $match: matchQuery }, { $project: projectQuery }];
-      const projectAggregation = ProjectModel.aggregate(aggregateQuery);
-      const project = await projectAggregation.exec(); //get project data
-
-      if (project.length === 0) {
-        return res.send({ "message": "no project" });
-      }
-
-      const connectQuery = project[0].connectQuery;
-      const campaigns = project[0].campaigns;
-      const query = getQuery(connectQuery, userID, visitorID);
-      const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
-      if (!queryResult || queryResult.length === 0) {
-        return res.send({ "message": "No result" });
-      }
-      const [customerData, metadata] = queryResult
-
-      const modelsAggregation = ModelModel.aggregate([
-        { $match: { $and: [{ userId: new Mongoose.Types.ObjectId(userID) }, { projectId: new Mongoose.Types.ObjectId(projectId) }] } },
-        { $match: { current: true } },
+    try {
+      const userAggregation = UserModel.aggregate([
+        { $match: { _id: new Mongoose.Types.ObjectId(userID) } },
         {
           $project: {
-            _id: 1,
-            name: 1,
-            type: "$questionType",
-            overallResult: "$overallResult",
-            targetChoiceInfo: '$targetChoice',
-            segmentsTree: 1
-          }
+            token: 1,
+            key: 1,
+            percentage: 1,
+            thresholds: 1,
+            country: 1,
+            'crmDetails.country': 1,
+            'crmDetails.subscription': 1,
+            'crmDetails.isAudienceNetworkEnabled': 1,
+            'enhencerCategories': 1,
+            'googleAds.conversionId': 1,
+            'facebookAds': 1,
+            'tiktokAds': 1
+          },
         },
-        { $sort: { _id: -1 } }
       ]);
 
-      console.time("mongo modelsAggregation time")
-      const models = await modelsAggregation.exec();
-      console.timeEnd("mongo modelsAggregation time")
-      const model = models[0];
-      const isAudienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled;
-      resultObject = await createResultObject({
-        userID,
-        model,
-        customerData,
-        updatedData,
-        campaigns,
-        facebookAds,
-        fbp: fbp,
-        fbc,
-        visitorId: visitorID,
-        ipAddress: ipAddress,
-        userAgent: userAgent,
-        eventSourceUrl: eventSourceUrl,
-        isAnEnabled: isAudienceNetworkEnabled,
-        enhencerCategories: enhencerCategories
-      });
-      resultObject.isAnEnabled = isAudienceNetworkEnabled;
-      if (user[0].tiktokAds) resultObject["tiktok"] = 1
+      const user = await userAggregation.exec();
 
-    }
+      if (user.length === 0) {
+        return res.status(404).send({
+          message: "No user or missing permissions."
+        });
+      } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring") {
+        return res.status(202).send({
+          message: "not_recurring",
+          isAnEnabled: user[0].crmDetails?.isAudienceNetworkEnabled,
+          enhencerCategories: user[0].enhencerCategories,
+          country: user[0].country
+        });
+      } else if (!user[0].token && !user[0].key) {
+        resultObject["Likely to buy"] = -1;
+        resultObject["Likely to buy segment"] = -1;
 
-    resultObject.country = user[0].country;
-    if (!resultObject.country || resultObject.country === "") {
-      if (user[0].crmDetails) {
-        resultObject.country = user[0].crmDetails.country;
+        resultObject["isAnEnabled"] = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled
+        let uniqId = Date.now().toString() + Math.floor(Math.random() * 10000).toString();
+        let eventId = "eid." + uniqId.substring(5) + "." + visitorID;
+
+        resultObject["campaigns"] = [
+          {
+            name: "enh_conv_rem",
+            adPlatform: "Facebook",
+            eventId: eventId,
+          },
+        ];
+        updatedData = {
+          score: null,
+          enh_conv_rem: 1,
+        };
+      } else {
+        if (user[0].facebookAds) {
+          facebookAds = user[0].facebookAds;
+        }
+        if (user[0].enhencerCategories) {
+          enhencerCategories = user[0].enhencerCategories;
+        }
+        const token = user[0].token;
+        const key = user[0].key;
+        const bytes = CryptoJS.AES.decrypt(token, key);
+        const idsJSON = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        let projectId = idsJSON.projectId;
+
+        const matchQuery = {
+          _id: new Mongoose.Types.ObjectId(projectId)
+        };
+        const projectQuery = {
+          connectQuery: 1,
+          campaigns: 1,
+        };
+        const aggregateQuery = [{ $match: matchQuery }, { $project: projectQuery }];
+        const projectAggregation = ProjectModel.aggregate(aggregateQuery);
+        const project = await projectAggregation.exec();
+
+        if (project.length === 0) {
+          return res.send({ "message": "no project" });
+        }
+
+        const connectQuery = project[0].connectQuery;
+        const campaigns = project[0].campaigns;
+        const query = getQuery(connectQuery, userID, visitorID);
+        const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
+        if (!queryResult || queryResult.length === 0) {
+          return res.send({ "message": "No result" });
+        }
+        const [customerData, metadata] = queryResult
+
+        const modelsAggregation = ModelModel.aggregate([
+          { $match: { $and: [{ userId: new Mongoose.Types.ObjectId(userID) }, { projectId: new Mongoose.Types.ObjectId(projectId) }] } },
+          { $match: { current: true } },
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              type: "$questionType",
+              overallResult: "$overallResult",
+              targetChoiceInfo: '$targetChoice',
+              segmentsTree: 1
+            }
+          },
+          { $sort: { _id: -1 } }
+        ]);
+
+        console.time("mongo modelsAggregation time")
+        const models = await modelsAggregation.exec();
+        console.timeEnd("mongo modelsAggregation time")
+        const model = models[0];
+        const isAudienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled;
+        resultObject = await createResultObject({
+          userID,
+          model,
+          customerData,
+          updatedData,
+          campaigns,
+          facebookAds,
+          fbp: fbp,
+          fbc,
+          visitorId: visitorID,
+          ipAddress: ipAddress,
+          userAgent: userAgent,
+          eventSourceUrl: eventSourceUrl,
+          isAnEnabled: isAudienceNetworkEnabled,
+          enhencerCategories: enhencerCategories
+        });
+        resultObject.isAnEnabled = isAudienceNetworkEnabled;
+        if (user[0].tiktokAds) resultObject["tiktok"] = 1
+
       }
+
+      resultObject.country = user[0].country;
+      if (!resultObject.country || resultObject.country === "") {
+        if (user[0].crmDetails) {
+          resultObject.country = user[0].crmDetails.country;
+        }
+      }
+      if (user[0].googleAds && user[0].googleAds.conversionId) {
+        resultObject.conversionId = user[0].googleAds.conversionId;
+      }
+
+    } catch (error) {
+      console.error('User aggregation error:', error);
+      throw new Error('Failed to process user data');
     }
-    if (user[0].googleAds && user[0].googleAds.conversionId) {
-      resultObject.conversionId = user[0].googleAds.conversionId;
-    }
 
-  } catch (error) {
-    return res.status(500).send({
-      message:
-        error.message || "Some error occurred while creating the Customer.",
-    });
-  }
+    Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userID;
 
-  Customer.tableName = "VISITOR_DATA_CUSTOMER_" + userID;
-
-  const transaction = await Customer.sequelize.transaction();
-  try {
-    const selectedCustomer = await getById(visitorID);
-    if (facebookAds.pixelId && facebookAds.accessToken) {
-      await sendEventsToFacebookThroughConversionAPI({
-        pixelId: facebookAds.pixelId,
-        accessToken: facebookAds.accessToken,
-        fbData: resultObject.fbData,
-        userId: userID
+    const transaction = await Customer.sequelize.transaction();
+    try {
+      const selectedCustomer = await getById(visitorID);
+      if (facebookAds.pixelId && facebookAds.accessToken) {
+        await sendEventsToFacebookThroughConversionAPI({
+          pixelId: facebookAds.pixelId,
+          accessToken: facebookAds.accessToken,
+          fbData: resultObject.fbData,
+          userId: userID
+        });
+      }
+      const { fbData, ...result } = resultObject;
+      await selectedCustomer.update(updatedData, { transaction });
+      await transaction.commit();
+      return res.status(202).send(JSON.stringify(result));
+    } catch (error) {
+      await transaction.rollback();
+      return res.status(200).send({
+        message: error.message || "Error occured while scoring",
       });
     }
-    const { fbData, ...result } = resultObject;
-    await selectedCustomer.update(updatedData, { transaction });
-    await transaction.commit();
-    return res.status(202).send(JSON.stringify(result));
+
   } catch (error) {
-    await transaction.rollback();
-    return res.status(200).send({
-      message: error.message || "Error occured while scoring",
+    console.error('Customer update error:', error);
+    return res.status(500).send({
+      message: "Error processing request",
+      error: error.message
     });
   }
-
 };
 
 function getQuery(connectQuery, userId, id) {
@@ -427,8 +306,6 @@ function getQuery(connectQuery, userId, id) {
   return query;
 }
 
-
-
 async function createResultObject({ userID, model, customerData, updatedData, campaigns, facebookAds, fbp, fbc,
   visitorId, ipAddress, userAgent, eventSourceUrl, isAnEnabled, enhencerCategories }) {
   let resultObject = {
@@ -444,16 +321,12 @@ async function createResultObject({ userID, model, customerData, updatedData, ca
     calculateCustomerScores(resultObject, model, customerData, updatedData);
     setEnhencerCampaignEvents(resultObject, customerData, updatedData, campaigns, facebookAds, fbp, fbc, visitorId, ipAddress, userAgent, eventSourceUrl);
 
-
-    // isAnEnabled is a flag for new audience network structure
     if (isAnEnabled && enhencerCategories && model.overallResult !== 0) {
       resultObject.enhencerCategories = enhencerCategories.toString();
     }
   }
   return resultObject;
 }
-
-
 
 function calculateCustomerScores(scoreObject, model, customerData, updatedData) {
   let counter = 0;
@@ -464,7 +337,6 @@ function calculateCustomerScores(scoreObject, model, customerData, updatedData) 
       if (branch.type !== 1) {
         if (branch.label !== "Overall") {
           if (branch.description in customerData) {
-            // bug may occur because of toString check!!!
             if (branch.choiceDescriptionList.indexOf(customerData[branch.description].toString()) > -1) {
               counter++;
             }
@@ -595,7 +467,6 @@ function setEnhencerCampaignEvents(resultObject, customerData, updatedData, camp
             "event_source_url": eventSourceUrl,
             "user_data": {
               "fbp": fbp,
-              //"external_id": visitorId,
               "client_ip_address": ipAddress,
               "client_user_agent": userAgent
             }
@@ -699,7 +570,6 @@ function createFilterCategories(customerData, filterBundles) {
         "value": 0,
       })
     }
-    // return count !== 0 ? true : false;
   };
 
   return bundles;
@@ -753,17 +623,14 @@ async function sendEventsToFacebookThroughConversionAPI({
 }
 
 function correctCustomerData(customerData) {
-  // Set empty string for undefined fields
   ['city', 'country', 'deviceType'].forEach(field => {
     customerData[field] = customerData[field] === undefined || customerData[field] === "undefined" ? "" : customerData[field];
   });
 
-  // Truncate source if exists
   if (customerData.source) {
     customerData.source = customerData.source.substring(0, 120);
   }
 
-  // Set action type specific fields
   const actionMap = {
     'product': { product_viewer: 1, last_product_view_time: new Date() },
     'basket': { add_to_basket: 1, last_add_to_basket_time: new Date() },
