@@ -321,7 +321,6 @@ async function createResultObject({ userID, model, customerData, updatedData, ca
 
 function calculateCustomerScores(scoreObject, model, customerData, updatedData) {
   let counter = 0;
-  console.log(">>>>> modelllll", model)
   for (let segmentIndex = 0; segmentIndex < model.segmentsTree.length; segmentIndex++) {
     const segment = model.segmentsTree[segmentIndex];
     for (let branchIndex = 0; branchIndex < segment.tree.length; branchIndex++) {
