@@ -273,10 +273,11 @@ exports.update = async (req, res) => {
     return res.status(202).send(JSON.stringify(result));
 
   } catch (error) {
-    console.error('User aggregation error:', error);
-    throw new Error('Failed to process user data');
+    return res.status(200).send({
+      message: "Failed to process user data",
+      error: error.message || "Unknown error occurred"
+    });
   }
-
 };
 
 function getQuery(connectQuery, userId, id) {
@@ -512,7 +513,7 @@ function filterCategories(customerData, categories) {
           break;
         }
       }
-    }
+    };
   };
   return count !== 0 ? true : false;
 }
