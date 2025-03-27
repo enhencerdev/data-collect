@@ -1,4 +1,9 @@
 const jsonValidator = (req, res, next) => {
+  // Skip validation for GET requests
+  if (req.method === 'GET') {
+    return next();
+  }
+
   try {
     // Ensure body is a string
     if (typeof req.body !== 'string') {
