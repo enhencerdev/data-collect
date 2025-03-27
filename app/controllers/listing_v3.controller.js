@@ -13,7 +13,7 @@ exports.create = async (req, res) => {
   }*/
 
   // Create a Customer
-  const { userId, visitorID, type, productCategory1, productCategory2, productCategory3 } = JSON.parse(req.body);
+  const { userId, visitorID, type, productCategory1, productCategory2, productCategory3 } = req.body;
 
   const listing = {
     visitorID,

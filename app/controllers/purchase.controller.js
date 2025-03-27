@@ -7,7 +7,6 @@ const customers = require("../controllers/customer.controller.js");
 
 exports.create = async (req, res) => {
   try {
-    const data = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const {
       visitorID,
       dateTime,
@@ -19,7 +18,7 @@ exports.create = async (req, res) => {
       actionType,
       userID,
       products,
-    } = data;
+    } = req.body;
 
     if (redis) {
       const missingCustomerTables = await redis.smembers('missing_customer_tables');
@@ -51,7 +50,7 @@ exports.create = async (req, res) => {
     else if (purchase.type === "tatil-budur") {
       TatilBudur.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
 
-      const tatilbudurPurchase = JSON.parse(req.body);
+      const tatilbudurPurchase = req.body;
       tatilbudurPurchase['dateTime'] = new Date();
       tatilbudurPurchase['type'] = tatilbudurPurchase['actionName'] === undefined ? "" : tatilbudurPurchase['actionName'];
       TatilBudur.create(tatilbudurPurchase);
@@ -59,7 +58,7 @@ exports.create = async (req, res) => {
     else if (purchase.type === "cruise-booking") {
       CruiseBooking.tableName = "VISITOR_DATA_PURCHASE_" + purchase.userID;
 
-      const cruiseBookingPurchase = JSON.parse(req.body);
+      const cruiseBookingPurchase = req.body;
       cruiseBookingPurchase['dateTime'] = new Date();
       cruiseBookingPurchase['type'] = cruiseBookingPurchase['actionName'] === undefined ? "" : cruiseBookingPurchase['actionName'];
       CruiseBooking.create(cruiseBookingPurchase);

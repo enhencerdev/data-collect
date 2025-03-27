@@ -644,7 +644,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
     fbp,
     fbc,
     userAgent,
-  } = JSON.parse(req.body)
+  } = req.body
 
   let fbData = []
 

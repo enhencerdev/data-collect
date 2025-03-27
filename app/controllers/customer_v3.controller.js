@@ -87,7 +87,7 @@ exports.update = async (req, res) => {
     fbc,
     userAgent,
     eventSourceUrl,
-  } = JSON.parse(req.body);
+  } = req.body;
 
   let updatedData = {};
   let resultObject = {};
@@ -517,7 +517,7 @@ const sendEventsToFacebookThroughConversionAPIWithoutScoring = async (req, res) 
     eventSourceUrl,
     fbp,
     userAgent,
-  } = JSON.parse(req.body)
+  } = req.body
 
   let fbData = []
 
