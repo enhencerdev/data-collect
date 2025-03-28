@@ -105,6 +105,11 @@ exports.update = async (req, res) => {
       eventSourceUrl,
     } = req.body;
 
+    let updatedData = {};
+      let resultObject = {};
+      let facebookAds = {};
+      let enhencerCategories;
+
     try {
       const userAggregation = UserModel.aggregate([
         //This pipeline aims to retrieve user data matching userID
@@ -128,11 +133,6 @@ exports.update = async (req, res) => {
       ]);
 
       const user = await userAggregation.exec(); //get user data
-
-      let updatedData = {};
-      let resultObject = {};
-      let facebookAds = {};
-      let enhencerCategories;
 
       if (user.length === 0) {
         //if user does not exist
