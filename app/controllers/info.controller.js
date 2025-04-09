@@ -17,6 +17,13 @@ exports.getInfoForCustomer = async (req, res) => {
         },
     ).lean();
 
+    if (!user) {
+        return res.status(200).send({
+            result: "error",
+            message: "User not found",
+        });
+    }
+
     res.status(200).send({
         result: "success",
         isBasicTracking: user.crmDetails?.isBasicTracking ?? false,
