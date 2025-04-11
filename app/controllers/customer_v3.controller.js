@@ -129,7 +129,7 @@ exports.update = async (req, res) => {
         message: "No user."
       });
 
-    } else if (!user.crmDetails || !user.crmDetails.subscription || user.crmDetails.subscription.status !== "Recurring") {
+    } else if (!user.crmDetails || !user.crmDetails.subscription || user.crmDetails.subscription.status !== "Recurring" || user[0].crmDetails.subscription.isPaused === "Yes") {
       //if user status is not recurring
       return res.status(202).send({
         message: "not_recurring",
@@ -170,7 +170,7 @@ exports.update = async (req, res) => {
       if (user.enhencerCategories) {
         enhencerCategories = user.enhencerCategories;
       }
-      
+
       const project = await ProjectModel.findOne({
         userId: new Mongoose.Types.ObjectId(userId)
       },
@@ -346,7 +346,7 @@ const updateVisitorAfterScoring = async ({
       where: { visitorID: visitorData.visitorID },
       transaction
     });
-    
+
     await transaction.commit();
     return true;
   } catch (error) {

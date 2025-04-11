@@ -141,7 +141,7 @@ exports.update = async (req, res) => {
           message: "No user or missing permissions."
         });
 
-      } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring") {
+      } else if (!user[0].crmDetails || !user[0].crmDetails.subscription || user[0].crmDetails.subscription.status !== "Recurring" || user[0].crmDetails.subscription.isPaused === "Yes") {
         // if user status is not recurring
 
         return res.status(202).send({
