@@ -78,7 +78,7 @@ const upsertProduct = async (product) => {
         pageCount: db.Sequelize.literal('COALESCE(pageCount, 0) + 1'),
         updated_at: new Date()
       }, {
-        conflictFields: ['visitorID', 'productID', 'productCategory1', 'productCategory2', 'productCategory3', 'price']
+        conflictFields: ['visitorID', 'productID']
       });
       return;
     } catch (error) {

@@ -1,5 +1,7 @@
 const requestIp = require('request-ip');
 
+const REQUEST_TIMEOUT = 30000; // 30 seconds
+
 const requestLogger = (req, res, next) => {
     const start = Date.now();
     const clientIp = requestIp.getClientIp(req);
@@ -20,6 +22,15 @@ const requestLogger = (req, res, next) => {
         body: req.body,
         userAgent: req.headers['user-agent']
     }); */
+
+    // Set request timeout
+    req.setTimeout(REQUEST_TIMEOUT, () => {
+        const duration = Date.now() - start;
+        console.error(`Request timeout after ${duration}ms - URL: ${req.originalUrl} - IP: ${clientIp}`);
+        if (!res.headersSent) {
+            res.status(503).send('Request timeout');
+        }
+    });
 
     res.on('finish', () => {
         const duration = Date.now() - start;
