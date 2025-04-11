@@ -66,38 +66,31 @@ exports.create = async (req, res) => {
 };
 
 const upsertProduct = async (product) => {
-  try {
-    Product.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
-    const createdProduct = await Product.upsert(product);
+  Product.tableName = "VISITOR_DATA_PRODUCT_" + product.userID;
+  let retryCount = 0;
+  const maxRetries = 3;
+  const backoffMs = 100;
 
-    if (!createdProduct) {
-      const {
-        visitorID,
-        productID,
-        productCategory1,
-        productCategory2,
-        productCategory3,
-        price,
-      } = product;
-
-      await Product.update(
-        { pageCount: db.Sequelize.literal("pageCount + 1") },
-        {
-          where: {
-            visitorID,
-            productID,
-            productCategory1,
-            productCategory2,
-            productCategory3,
-            price,
-          },
-        }
-      );
+  while (retryCount < maxRetries) {
+    try {
+      await Product.upsert({
+        ...product,
+        pageCount: db.Sequelize.literal('COALESCE(pageCount, 0) + 1'),
+        updated_at: new Date()
+      }, {
+        conflictFields: ['visitorID', 'productID', 'productCategory1', 'productCategory2', 'productCategory3', 'price']
+      });
+      return;
+    } catch (error) {
+      if (error.parent?.code === 'ER_LOCK_DEADLOCK' && retryCount < maxRetries - 1) {
+        retryCount++;
+        const jitter = Math.floor(Math.random() * 100);
+        await new Promise(resolve => setTimeout(resolve, (backoffMs * Math.pow(2, retryCount)) + jitter));
+        continue;
+      }
+      console.error('Product upsert error:', error);
+      throw error;
     }
-    return;
-  } catch (error) {
-    console.error('Product upsert error:', error);
-    throw error;
   }
 };
 
