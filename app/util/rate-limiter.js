@@ -4,7 +4,7 @@ const requestIp = require('request-ip');
 // More flexible rate limiting
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    max: 400, // Increased to 120 requests per minute
+    max: process.env.RATE_LIMIT_MAX || 400,
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
