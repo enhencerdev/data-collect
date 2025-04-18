@@ -6,6 +6,7 @@ module.exports = app => {
   
     // Create a new Customer
     router.post("/v3", customers_v3.create);
+    router.post("/", customers.create);
     
   
     // Score a Customer with id
