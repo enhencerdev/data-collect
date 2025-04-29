@@ -7,17 +7,6 @@ const requestLogger = (req, res, next) => {
     const clientIp = requestIp.getClientIp(req);
     const timestamp = new Date().toISOString();
     
-    // Track all request completions
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        const userId = req.body?.userID || req.body?.userId;
-        const statusCode = res.statusCode;
-        const successMsg = statusCode >= 200 && statusCode < 300 ? 'SUCCESS' : 'FAILED';
-        
-        // Log all requests with their status code and timing
-        console.log(`${successMsg} ${req.method} ${req.originalUrl} - Status: ${statusCode} - Time: ${duration}ms - IP: ${clientIp}${userId ? ' - UserID: ' + userId : ''}`);
-    });
-
     // Set request timeout
     req.setTimeout(REQUEST_TIMEOUT, () => {
         const duration = Date.now() - start;
