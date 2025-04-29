@@ -7,45 +7,15 @@ const requestLogger = (req, res, next) => {
     const clientIp = requestIp.getClientIp(req);
     const timestamp = new Date().toISOString();
     
-    // Track if the request completed normally
-    let requestFinished = false;
-
-    /* console.log("================================================")
-    console.log("")
-    console.log("req.body")
-    console.log(req.body)
-    console.log("")
-    console.log("")
-    console.log("================================================")
-    console.log({
-        timestamp,
-        ip: clientIp,
-        method: req.method,
-        path: req.path,
-        body: req.body,
-        userAgent: req.headers['user-agent']
-    }); */
-
-    // Mark when response is finished properly
+    // Track all request completions
     res.on('finish', () => {
-        requestFinished = true;
         const duration = Date.now() - start;
-        if (duration > 2000) {
-            // Body is already parsed by middleware
-            const userId = req.body?.userID || req.body?.userId;
-            console.log(`More than 2 seconds! URL: ${req.originalUrl} - UserID: ${userId} - Response Time: ${duration}ms`);
-        }
-    });
-
-    // Monitor client disconnection events - only log as aborted if not properly finished
-    req.on('close', () => {
-        // Wait a small delay to make sure 'finish' event has a chance to fire first if it's going to
-        setTimeout(() => {
-            if (!requestFinished) {
-                const duration = Date.now() - start;
-                console.log(`Request aborted by client after ${duration}ms - URL: ${req.originalUrl} - IP: ${clientIp}`);
-            }
-        }, 50);
+        const userId = req.body?.userID || req.body?.userId;
+        const statusCode = res.statusCode;
+        const successMsg = statusCode >= 200 && statusCode < 300 ? 'SUCCESS' : 'FAILED';
+        
+        // Log all requests with their status code and timing
+        console.log(`${successMsg} ${req.method} ${req.originalUrl} - Status: ${statusCode} - Time: ${duration}ms - IP: ${clientIp}${userId ? ' - UserID: ' + userId : ''}`);
     });
 
     // Set request timeout

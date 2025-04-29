@@ -14,6 +14,15 @@ const app = express();
   origin: "http://localhost:8081"
 }; */
 
+// Better CORS configuration with proper error handling
+app.use(cors({
+  origin: '*', // Allow all origins - customize this for production
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+}));
+
 // First, set up parsing with proper error handling
 // Use JSON parser for JSON requests
 app.use(bodyParser.json({
@@ -35,7 +44,7 @@ app.use(bodyParser.raw({
   limit: '1mb'
 }));
 
-// Handle request aborted errors
+// Handle request aborted errors - completely ignore/silence them
 app.use((err, req, res, next) => {
   // Check for the specific raw-body error messages that indicate actual client aborts
   if (
@@ -46,14 +55,7 @@ app.use((err, req, res, next) => {
       err.message.includes('client disconnected')
     ))
   ) {
-    // Only log if it's truly an abort scenario
-    console.log('Raw-body request error:', {
-      url: req.originalUrl,
-      method: req.method,
-      errorType: err.type,
-      errorCode: err.code,
-      errorMessage: err.message
-    });
+    // Just silently ignore aborted request errors - they're normal and not worth logging
     return;
   }
   next(err);
@@ -62,7 +64,6 @@ app.use((err, req, res, next) => {
 // Then compression and other middleware
 app.use(compression());
 app.use(methodOverride('X-HTTP-Method-Override'));
-app.use(cors());
 
 // Apply rate limiter after parsing
 // app.use(limiter);
