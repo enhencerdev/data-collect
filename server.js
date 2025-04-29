@@ -6,6 +6,7 @@ const methodOverride = require('method-override');
 const limiter = require('./app/util/rate-limiter');
 const requestLogger = require('./app/util/request-logger');
 const jsonValidator = require("./app/middleware/json-validator");
+const userIdValidator = require("./app/middleware/user-id-validator");
 
 const app = express();
 
@@ -32,6 +33,9 @@ app.use(requestLogger);
 
 // Apply JSON validator to all API routes
 app.use('/api', jsonValidator);
+
+// Apply user ID validator to all API routes
+app.use('/api', userIdValidator);
 
 const db = require("./app/models");
 
