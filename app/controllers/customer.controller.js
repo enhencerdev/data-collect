@@ -96,8 +96,13 @@ const upsertCustomer = async ({ body }) => {
 exports.update = async (req, res) => {
   try {
     const ipAddress = requestIp.getClientIp(req);
+    const visitorID = req.params.id;
+    if (!visitorID) {
+      return res.status(400).send({
+        message: "Visitor ID is required"
+      });
+    }
     const {
-      visitorID = req.params.id,
       userID,
       fbp,
       fbc,
