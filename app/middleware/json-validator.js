@@ -5,6 +5,19 @@ const jsonValidator = (req, res, next) => {
   }
 
   try {
+    // Handle case where body might be undefined due to aborted request
+    if (!req.body) {
+      return res.status(400).send({
+        message: "Missing request body",
+        error: "Request body is required"
+      });
+    }
+    
+    // If body already parsed as object (from another middleware), use it directly
+    if (typeof req.body === 'object' && req.body !== null) {
+      return next();
+    }
+
     // Ensure body is a string
     if (typeof req.body !== 'string') {
       return res.status(400).send({

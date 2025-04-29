@@ -6,6 +6,9 @@ const requestLogger = (req, res, next) => {
     const start = Date.now();
     const clientIp = requestIp.getClientIp(req);
     const timestamp = new Date().toISOString();
+    
+    // Track if the request completed normally
+    let requestFinished = false;
 
     /* console.log("================================================")
     console.log("")
@@ -23,21 +26,34 @@ const requestLogger = (req, res, next) => {
         userAgent: req.headers['user-agent']
     }); */
 
+    // Mark when response is finished properly
+    res.on('finish', () => {
+        requestFinished = true;
+        const duration = Date.now() - start;
+        if (duration > 2000) {
+            // Body is already parsed by middleware
+            const userId = req.body?.userID || req.body?.userId;
+            console.log(`More than 2 seconds! URL: ${req.originalUrl} - UserID: ${userId} - Response Time: ${duration}ms`);
+        }
+    });
+
+    // Monitor client disconnection events - only log as aborted if not properly finished
+    req.on('close', () => {
+        // Wait a small delay to make sure 'finish' event has a chance to fire first if it's going to
+        setTimeout(() => {
+            if (!requestFinished) {
+                const duration = Date.now() - start;
+                console.log(`Request aborted by client after ${duration}ms - URL: ${req.originalUrl} - IP: ${clientIp}`);
+            }
+        }, 50);
+    });
+
     // Set request timeout
     req.setTimeout(REQUEST_TIMEOUT, () => {
         const duration = Date.now() - start;
         console.error(`Request timeout after ${duration}ms - URL: ${req.originalUrl} - IP: ${clientIp}`);
         if (!res.headersSent) {
             res.status(503).send('Request timeout');
-        }
-    });
-
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        if (duration > 2000) {
-            // Body is already parsed by middleware
-            const userId = req.body?.userID || req.body?.userId;
-            console.log(`More than 2 seconds! URL: ${req.originalUrl} - UserID: ${userId} - Response Time: ${duration}ms`);
         }
     });
 
