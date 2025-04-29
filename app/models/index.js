@@ -16,11 +16,15 @@ const dbOptions = {
 const mongoose = new Mongoose.createConnection(mongodbConfig[ENV], dbOptions);
 
 // If the Node process ends, close the Mongoose connection
-process.on('SIGINT', function () {
-  Mongoose.connection.close(function () {
+process.on('SIGINT', async function () {
+  try {
+    await Mongoose.connection.close();
     console.log('Mongoose disconnected on app termination');
     process.exit(0);
-  });
+  } catch (err) {
+    console.error('Error during Mongoose disconnection:', err);
+    process.exit(1);
+  }
 });
 
 

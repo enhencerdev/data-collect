@@ -228,9 +228,10 @@ exports.update = async (req, res) => {
           { $sort: { _id: -1 } }
         ]);
 
-        console.time("mongo modelsAggregation time")
+        const timeLabel = `mongo modelsAggregation time_${userID}_${Date.now()}`;
+        console.time(timeLabel);
         const models = await modelsAggregation.exec();
-        console.timeEnd("mongo modelsAggregation time")
+        console.timeEnd(timeLabel);
         const model = models[0];
         const isAudienceNetworkEnabled = !!user[0].crmDetails && user[0].crmDetails.isAudienceNetworkEnabled;
         resultObject = await createResultObject({
