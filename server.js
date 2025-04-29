@@ -14,6 +14,29 @@ const app = express();
   origin: "http://localhost:8081"
 }; */
 
+// Add response time tracking middleware
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  // Track slow requests
+  const timeoutId = setTimeout(() => {
+    console.warn(`SLOW REQUEST WARNING: ${req.method} ${req.originalUrl} - Still processing after 3s`);
+  }, 3000);
+  
+  // Clean up and record timing when response finishes
+  res.on('finish', () => {
+    clearTimeout(timeoutId);
+    const duration = Date.now() - startTime;
+    
+    // Log very slow requests that still succeeded
+    if (duration > 5000) {
+      console.warn(`SLOW REQUEST COMPLETED: ${req.method} ${req.originalUrl} - Took ${duration}ms to complete`);
+    }
+  });
+  
+  next();
+});
+
 // Better CORS configuration with proper error handling
 app.use(cors({
   origin: '*', // Allow all origins - customize this for production
@@ -77,6 +100,33 @@ app.use('/api', jsonValidator);
 // Apply user ID validator to all API routes
 app.use('/api', userIdValidator);
 
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  const healthData = {
+    status: 'up',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: process.version
+  };
+  
+  res.status(200).json(healthData);
+});
+
+// simple route
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to enhencer!" });
+});
+
+// API routes
+console.log("Registering routes...");
+require("./app/routes/customer.routes")(app);
+require("./app/routes/listing.routes")(app);
+require("./app/routes/product.routes")(app);
+require("./app/routes/purchase.routes")(app);
+require("./app/routes/info.routes")(app);
+console.log("Routes registered successfully");
+
 const db = require("./app/models");
 
 db.sequelize.sync()
@@ -92,27 +142,40 @@ db.sequelize.sync()
 //   console.log("Drop and re-sync db.");
 // });
 
-// simple route
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to enhencer!" });
-});
-
-require("./app/routes/customer.routes")(app);
-require("./app/routes/listing.routes")(app);
-require("./app/routes/product.routes")(app);
-require("./app/routes/purchase.routes")(app);
-require("./app/routes/info.routes")(app);
-
-
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
+});
+
+// Configure server timeouts
+server.timeout = 60000; // 60 seconds socket timeout
+server.keepAliveTimeout = 65000; // 65 seconds keep-alive timeout
+server.headersTimeout = 66000; // 66 seconds for headers timeout
+
+// Handle uncaught exceptions to prevent server crashes
+process.on('uncaughtException', (error) => {
+  console.error('UNCAUGHT EXCEPTION:', error);
+  // Don't exit the process - report the error but keep running
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
 });
 
 // Global error handler - must be placed after all routes and middleware
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  // Log detailed error information
+  console.error('Unhandled server error:', {
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+    errorName: err.name,
+    errorMessage: err.message,
+    errorStack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    timestamp: new Date().toISOString()
+  });
   
   // Don't attempt to send response if headers already sent or client disconnected
   if (res.headersSent || !req.socket.writable) {
@@ -121,7 +184,28 @@ app.use((err, req, res, next) => {
   
   // Send appropriate error response
   res.status(500).json({
+    status: 'error',
     message: 'Internal server error',
-    error: process.env.NODE_ENV === 'production' ? undefined : err.message
+    // Only include error details in development
+    error: process.env.NODE_ENV === 'production' ? undefined : {
+      name: err.name,
+      message: err.message,
+      stack: err.stack
+    }
   });
+});
+
+// Add a catch-all 404 handler for any unmatched routes
+app.use((req, res) => {
+  console.log(`404 Not Found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    status: 'error',
+    message: 'Endpoint not found'
+  });
+});
+
+// Handle server-level errors
+server.on('error', (error) => {
+  console.error('Server error:', error);
+  process.exit(1);
 });
