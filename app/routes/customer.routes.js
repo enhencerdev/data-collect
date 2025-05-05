@@ -8,8 +8,11 @@ module.exports = app => {
     router.post("/v3", customers_v3.create);
     router.post("/", customers.create);
     
-    // Handle PUT request without ID
+    // Handle PUT request without ID (with and without trailing slash)
     router.put("/", (req, res) => res.status(200).send({ result: "success" }));
+    router.put("//", (req, res) => res.status(200).send({ result: "success" }));
+    router.put("/customers", (req, res) => res.status(200).send({ result: "success" }));
+    router.put("/customers/", (req, res) => res.status(200).send({ result: "success" }));
   
     // Score a Customer with id
     router.put("/:id", customers.update);
