@@ -11,8 +11,12 @@ module.exports = app => {
     // Handle PUT request without ID (with and without trailing slash)
     router.put("/", (req, res) => res.status(200).send({ result: "success" }));
     router.put("//", (req, res) => res.status(200).send({ result: "success" }));
-    router.put("/customers", (req, res) => res.status(200).send({ result: "success" }));
-    router.put("/customers/", (req, res) => res.status(200).send({ result: "success" }));
+    
+    // Handle the "undefined" ID case that's causing crashes
+    router.put("/undefined", (req, res) => {
+      console.log(`[ALERT] Received PUT request with 'undefined' ID - IP: ${req.ip} - UserID: ${req.body?.userID} - Body:`, JSON.stringify(req.body));
+      return res.status(200).send({ result: "success" });
+    });
   
     // Score a Customer with id
     router.put("/:id", customers.update);
@@ -20,7 +24,6 @@ module.exports = app => {
     
     router.post("/fbcapi/", customers.sendEventsToFacebookThroughConversionAPIWithoutScoring);
     router.post("/v3/fbcapi/", customers_v3.sendEventsToFacebookThroughConversionAPIWithoutScoring);
-    
   
     app.use('/api/customers', router);
   };

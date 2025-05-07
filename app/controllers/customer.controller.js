@@ -97,9 +97,11 @@ exports.update = async (req, res) => {
   try {
     const ipAddress = requestIp.getClientIp(req);
     const visitorID = req.params.id;
-    if (!visitorID) {
-      return res.status(400).send({
-        message: "Visitor ID is required"
+    if (!visitorID || visitorID === 'undefined') {
+      console.log(`[ALERT] Update attempted with invalid visitorID: '${visitorID}' - IP: ${ipAddress} - UserID: ${req.body?.userID} - Body:`, JSON.stringify(req.body));
+      return res.status(200).send({
+        result: "success",
+        message: "No visitor ID or undefined ID provided"
       });
     }
     const {
