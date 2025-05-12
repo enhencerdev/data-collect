@@ -213,7 +213,19 @@ exports.update = async (req, res) => {
         const connectQuery = project[0].connectQuery;
         const campaigns = project[0].campaigns;
         const query = getQuery(connectQuery, userID, visitorID);
+        
+        const sqlQueryTimeLabel = `sql query time_${userID}_${Date.now()}`;
+        const startTime = Date.now();
+        console.time(sqlQueryTimeLabel);
         const queryResult = await sequelize.query(query, { raw: true, type: sequelize.QueryTypes.SELECT });
+        console.timeEnd(sqlQueryTimeLabel);
+        
+        // Log slow queries (taking more than 2 seconds)
+        const queryDuration = Date.now() - startTime;
+        if (queryDuration > 2000) {
+          console.log(`SLOW QUERY (${queryDuration}ms) for userID ${userID}:`, query);
+        }
+        
         if (!queryResult || queryResult.length === 0) {
           return res.send({ "message": "No result" });
         }

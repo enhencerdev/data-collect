@@ -19,7 +19,7 @@ module.exports = {
     database: process.env.MYSQL_DBNAME,
     host: process.env.MYSQL_HOST,
     port: 3306,
-    logging: true,
+    logging: false,
     dialect: 'mysql',
     dialectOptions: {
       ssl: {
